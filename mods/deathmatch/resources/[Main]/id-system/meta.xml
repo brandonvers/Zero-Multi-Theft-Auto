@@ -1,0 +1,6 @@
+<meta>
+	<info author="|×|Brendon|×|" type="script" name="id-system" />
+	<script src="c_id-system.lua" type="client" cache="false" />
+	<script src="g_id-system.lua" type="shared" cache="false" />
+	<script src="s_id-system.lua" type="server" />
+</meta>

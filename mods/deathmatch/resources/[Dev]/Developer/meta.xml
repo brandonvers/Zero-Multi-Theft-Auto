@@ -1,0 +1,7 @@
+<meta>
+	<info author="|×|Brendon|×|" version="1.0" name="Developer" description=""
+		type="script" gamemodes="Zero"
+	/>
+	<script src="c_Developer.lua" type="client" cache="false" />
+	<script src="s_Developer.lua" type="server" />
+</meta>

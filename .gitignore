@@ -39,3 +39,42 @@ luac.out
 *.x86_64
 *.hex
 
+# MTA Generated
+/dumps
+/dumps/*
+*Thumbs.db
+*.log
+*.tex
+*.db
+*.db-journal
+/mta-server64
+/mta
+/x64
+MTA Server.exe
+core.dll
+libcurl.dll
+mods/deathmatch/dbconmy.dll
+mods/deathmatch/deathmatch.dll
+mods/deathmatch/libmysql.dll
+mods/deathmatch/lua5.1.dll
+mods/deathmatch/pcre3.dll
+net.dll
+pthread.dll
+xmll.dll
+mods/deathmatch/server-id.keys
+LICENSE
+NOTICE
+README
+mods/deathmatch/dumps/
+local.conf
+banlist.xml
+
+# Zero Configurations
+
+/mods/deathmatch/resource-cache/
+/mods/deathmatch/backups
+/mods/deathmatch/logs
+/mods/deathmatch/acl.xml
+/mods/deathmatch/settings.xml
+/mods/deathmatch/vehiclecolors.conf
+

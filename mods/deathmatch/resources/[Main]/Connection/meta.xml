@@ -1,0 +1,36 @@
+<meta>
+
+	<info author="|×|Brendon|×|" version="1.0" name="Connection" description="Mysql Connection"
+		type="script" gamemodes="Zero"
+	/>
+	<script src="s_Connection.lua" type="server" />
+
+	<export function="getConnection" />
+
+	<settings>
+		<setting name="@databaseType" value="mysql"
+			desc="The type of database. This can be either sqlite or mysql" />
+		<setting name="@mysql_host" value="127.0.0.1" desc="Host address e.g. host=127.0.0.1" />
+		<setting name="@mysql_port" value="3306"
+			desc="Host port e.g. port=1234 (optional, defaults to standard MySQL port if not used)" />
+		<setting name="@mysql_charset" value="utf8"
+			desc="Communicate with the server using a character which is different from the default e.g. charset=utf8 (optional)" />
+		<setting name="@mysql_dbname" value="Zero"
+			desc="Name of the database to use e.g. dbname=test" />
+		<setting name="@mysql_username" value="root"
+			desc="Usually required for MySQL, ignored by SQLite" />
+		<setting name="@mysql_password" value=""
+			desc="Usually required for MySQL, ignored by SQLite" />
+		<setting name="@mysql_tag" value="Database"
+			desc="(Default value 'tag=script'). A string which helps identify activity from this connection in the database debug log file." />
+		<setting name="@mysql_log" value="1"
+			desc="which can be set to 0 or 1. (Default value 'log=1'). When set to 0, activity from this connection will not be recorded in the database debug log file." />
+		<setting name="@mysql_autoreconnect" value="1"
+			desc="When set to 1, dropped connections will automatically be reconnected. Note that session variables (incl. SET NAMES), user variables, table locks and temporary tables will be reset because of the reconnection. So if you use these fancy features, you will need to turn autoreconnect off and cope with dropped connections some other way." />
+		<setting name="@mysql_share" value="0"
+			desc="When set to 1, the connection is shared and will be used by other calls to dbConnect with the same host string. This is usually a good thing for SQLite connections, but not so good for MySQL unless care is taken." />
+		<setting name="@mysql_multi_statements" value="1"
+			desc="Enable multiple statements (separated by a semi-colon) in one query. Use dbPrepareString when building a multiple statement query to reduce SQL injection risks." />
+	</settings>
+
+</meta>

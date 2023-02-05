@@ -1,0 +1,14 @@
+<meta>
+	<info author="|×|Brendon|×|" version="1.0" name="core-system" description="Server main systen"
+		type="script" gamemodes="Zero"
+	/>
+
+	<script src="c_core-system.lua" type="client" cache="false" />
+	<script src="s_core-system.lua" type="server" />
+
+	<!-- Fonts -->
+	<file src="fonts/roboto.ttf" />
+	<!-- Fonts End -->
+
+
+</meta>
