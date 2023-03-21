@@ -1,0 +1,6 @@
+<meta>
+	<info author="|×|Brendon|×|" version="1.0" name="save-system"
+		description="Zero MTA Save System" type="script" gamemodes="Zero" />
+	<script src="c_save-system.lua" type="client" cache="false" />
+	<script src="s_save-system.lua" type="server" />
+</meta>

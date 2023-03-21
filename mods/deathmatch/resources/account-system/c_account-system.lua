@@ -26,6 +26,8 @@ function startAccountSystem()
         showChat(true);
     end
 
+	addEventHandler("onClientRender", root, drawnDetails, true, "low-5")
+
     local screenW, screenH = guiGetScreenSize();
     if (screenW<800) and (screenH<600) then
         outputChatBox("FIGYELMEZTETÉS: Alacsony felbontáson fut. Javasoljuk, a legalább 800x600 képernyot.", 255, 0, 0);
@@ -1381,4 +1383,28 @@ function charCreateSuccess()
 end
 addEvent("charCreateSuccess", true );
 addEventHandler("charCreateSuccess", getRootElement(), charCreateSuccess);
+
+function drawnDetails()
+	local time = getRealTime();
+	local month = time.month + 1;
+	local str = tostring(month);
+	if month < 10 then
+	    str = "0" .. str;
+	end
+	local monthday = time.monthday;
+	local str2 = tostring(monthday);
+	if monthday < 10 then
+	    str2 = "0" .. str2;
+	end
+	local datum =  "2023."..str.."."..str2;
+	local version = "2.0";
+
+    local sx, sy = guiGetScreenSize();
+	local id = getElementData(getLocalPlayer(), "acc:charid");
+	if (id) then
+    	dxDrawText("ZeroMta ["..version.."] -  AccountID: "..id.." - "..datum, sx - 85, sy - 12/2, sx - 85, sy - 12/2, tocolor(255, 255, 255, 100), 1, "default-bold", "right", "center", false, false, false, true)
+	else
+		dxDrawText("ZeroMta ["..version.."] -  AccountID:   - "..datum, sx - 85, sy - 12/2, sx - 85, sy - 12/2, tocolor(255, 255, 255, 100), 1, "default-bold", "right", "center", false, false, false, true)
+	end
+end
 

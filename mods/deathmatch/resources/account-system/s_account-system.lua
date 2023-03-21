@@ -17,7 +17,7 @@ function Login(username, password, valami)
                 if (user[1]["password"] == password) then
                     if (user[1]["serial"] == getPlayerSerial(source)) then
                         local playing = getElementData(source, "isPlaying");
-                        --if (playing==false) then
+                        if (playing==false) then
                             outputChatBox("Adatok betöltése folyamatban...",source,0,255,0);
                             setElementData(source, "isPlaying", true);
                             setElementData(source, "acc:charid", user[1]["id"]);
@@ -27,9 +27,9 @@ function Login(username, password, valami)
                             local accountid = getElementData(source, "acc:charid");
                             
                             sendAccounts(source, accountid);
-                        --else
-                       --     outputChatBox("Be vagy jelentkezve",source, 255, 0, 0);
-                       -- end
+                        else
+                            outputChatBox("Be vagy jelentkezve",source, 255, 0, 0);
+                        end
                     else
                         outputChatBox("Mas szerialhoz van tarsitva",source, 255, 0, 0);
                     end
@@ -339,7 +339,7 @@ function spawnCharacter(charname, version)
     local data = data2[1]
 
 	if (data) then
-		local id = tonumber(data["id"])
+		local id = tonumber(data["acc:charid"])
 		local currentid = getElementData(source, "acc:id")
 
 		local x = tonumber(data["x"])
@@ -393,9 +393,8 @@ function spawnCharacter(charname, version)
         spawnPlayer(source, x, y, z, rot, skin)
         setCameraTarget(source, source);
         fadeCamera(source, true);
-        showCursor(source, false)
-		
-		
+        showCursor(source, false);
+
 		setElementDimension(source, dimension)
 		setElementInterior(source, interior, x, y, z)
 		setCameraInterior(source, interior)
