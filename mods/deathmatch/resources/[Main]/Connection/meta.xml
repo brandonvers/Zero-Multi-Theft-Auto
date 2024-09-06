@@ -15,7 +15,7 @@
 			desc="Host port e.g. port=1234 (optional, defaults to standard MySQL port if not used)" />
 		<setting name="@mysql_charset" value="utf8"
 			desc="Communicate with the server using a character which is different from the default e.g. charset=utf8 (optional)" />
-		<setting name="@mysql_dbname" value="Zero"
+		<setting name="@mysql_dbname" value="zero"
 			desc="Name of the database to use e.g. dbname=test" />
 		<setting name="@mysql_username" value="root"
 			desc="Usually required for MySQL, ignored by SQLite" />

@@ -15,6 +15,7 @@ function DestroyConnect()
     if isElement(connection) then
 		destroyElement(connection);
         outputDebugString("[MYSQL] The Mysql has stopped", 4, 255, 0, 0);
+        shutdown("[MYSQL] Megszakadt a kapcsolat az adatbazissal.")
 	end
 end
 addEventHandler("onResourceStop", resourceRoot, DestroyConnect);
@@ -22,7 +23,7 @@ addEventHandler("onResourceStop", resourceRoot, DestroyConnect);
 function getConnection(res)
     local resName = getResourceName(res);
     if resName then
-        outputDebugString("[MYSQL]Connection requested by resource "..resName.."!", 4, 0, 255, 0);
+        outputDebugString("[MYSQL] Connection requested by resource: "..resName.."!", 4, 0, 255, 0);
 	    return connection;
     end
 end

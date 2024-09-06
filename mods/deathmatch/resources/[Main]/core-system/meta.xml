@@ -4,11 +4,20 @@
 	/>
 
 	<script src="c_core-system.lua" type="client" cache="false" />
+	<script src="g_core-system.lua" type="shared" cache="false" />
 	<script src="s_core-system.lua" type="server" />
 
 	<!-- Fonts -->
 	<file src="fonts/roboto.ttf" />
 	<!-- Fonts End -->
+
+	<!-- Exports -->
+	<export function="getVersion" type="shared" />
+    <export function="getServerColor" type="shared" />
+    <export function="getServerData" type="shared" />
+	<export function="getTimeStringByNumber" type="shared" />
+	<export function="getServerSyntax" type="shared" />
+	<export function="getPlayerDeveloper" type="shared" />
 
 
 </meta>

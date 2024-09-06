@@ -1,4 +1,27 @@
+function getPlayerDeveloper(player)
+    if getElementData(player, "isPlaying") then
+        local serial = getElementData(player, "mtaserial")
+        if devSerials[serial] then
+            return true, devNames[serial]
+        else
+            return false
+        end
+    end
+end
 
+
+bindKey("m", "down", 
+    function()   
+       -- if getElementData(localPlayer, "bar >> Use") then return end
+       -- if getElementData(localPlayer, "score >> bar") then return end
+        if not (getElementData(localPlayer, "isPlaying")) then return end
+        if getElementData(localPlayer, "toggleCursor") then return end
+        cursorState = isCursorShowing()
+	    showCursor(not cursorState)
+        cursorState = not cursorState
+        setCursorAlpha(255)
+	end
+)
 
 --[[
 addEventHandler("onClientResourceStart", resourceRoot,

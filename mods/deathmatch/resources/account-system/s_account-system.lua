@@ -2,10 +2,11 @@ local mysql = exports.Connection;
 local database = mysql:getConnection(getThisResource());
 
 function JoinPlayer()
-    --setElementDimension ( source, 0);
-   -- setElementInterior ( source, 0 );
+    setElementDimension (source, 0);
+    setElementInterior (source, 0 );
+    clearChatBox(source);
 end
-addEventHandler ( "onPlayerJoin", getRootElement(), JoinPlayer);
+addEventHandler ("onPlayerJoin", getRootElement(), JoinPlayer);
 
 function Login(username, password, valami)
     local qh = dbQuery(database, "SELECT * FROM accounts WHERE username=? ", username);
@@ -20,11 +21,15 @@ function Login(username, password, valami)
                         if (playing==false) then
                             outputChatBox("Adatok betöltése folyamatban...",source,0,255,0);
                             setElementData(source, "isPlaying", true);
-                            setElementData(source, "acc:charid", user[1]["id"]);
+                            setElementData(source, "acc:accid", user[1]["id"]);
                             setElementData(source, "acc:uname", user[1]["username"]);
+                            setElementData(source, "acc:adminlevel", 0);
+                            setElementData(source, "acc:muted", 0);
+                          --  setElementData(source, "acc:playhour", 0);
+                           -- setElementData(source, "acc:pp", 0);
                                 -- Ide meg elemendata
                             triggerClientEvent(source, "hideUI", source);
-                            local accountid = getElementData(source, "acc:charid");
+                            local accountid = getElementData(source, "acc:accid");
                             
                             sendAccounts(source, accountid);
                         else
@@ -87,8 +92,18 @@ end
 addEvent("attemptRegister", true);
 addEventHandler("attemptRegister", getRootElement(), AccountRegistration);
 
-function LostPassword(username, password, valami)
-    outputChatBox("Az email sikeresen kikuldve.",source, 0, 255, 0);
+function LostPassword(email, email2x, valami)
+    local qh = dbQuery(database, "SELECT email FROM accounts WHERE email=? ", email);
+    local email = dbPoll(qh, 500);
+    if (user) then
+        outputChatBox("Az email sikeresen kikuldve.",source, 0, 255, 0);
+        --TODO: Itt ezt meg majd folytatni kell email kuldessel stb
+    else
+        outputChatBox("Hibas email cim vagy nincs felhasznalod.", source, 255, 0, 0);
+    end
+    if (email) then
+        dbFree(qh);
+    end
 end
 addEvent("attemptLostPassword", true);
 addEventHandler("attemptLostPassword", getRootElement(), LostPassword);
@@ -101,21 +116,62 @@ function sendAccounts(thePlayer, id, isChangeChar)
         local email = dbPoll(qh2, 500);
         local accounts = { };
 
-        --[[
-        if (email) then
-            if (#email > 0 ) then
-                triggerClientEvent(thePlayer, "showCharacterSelection", thePlayer, accounts);
-            else
-                triggerClientEvent(thePlayer, "showCharacterSelection", thePlayer, accounts, false, true);
-            end
+        if not (#tostring(email[1]["email"]) > 0) then
+          triggerClientEvent(thePlayer, "showCharacterSelection", thePlayer, accounts, false, true);
         end
-        ]]
+        
         if (character) then
             if  (#character > 0 ) then
                 local qh3 = dbQuery(database, "SELECT id, charactername, cked, lastarea, age, gender, faction_id, faction_rank, skin, DATEDIFF(NOW(), lastlogin) as llastlogin  FROM characters WHERE accountid=? ", id);
                 local result = dbPoll(qh3, 500);
 
-                local i = 1;
+                for i = 1, #character do
+                    if (result) then
+                        local row = result[i];
+                        accounts[i] = { };
+                        accounts[i][1] = tonumber(row["id"]);
+                        accounts[i][2] = row["charactername"];
+    
+                        if (tonumber(row["cked"]) or 0) > 0 then
+                            accounts[i][3] = 1;
+                        end
+    
+                        accounts[i][4] = row["lastarea"];
+                        accounts[i][5] = tonumber(row["age"]);
+                        accounts[i][6] = tonumber(row["gender"]);
+                        
+                        local factionID = tonumber(row["faction_id"]);
+                        local factionRank = tonumber(row["faction_rank"]);
+                        
+                        if (factionID<1) or not (factionID) then
+                           accounts[i][7] = nil;
+                            accounts[i][8] = nil;
+                       else
+                            --factionResult = mysql:query_fetch_assoc("SELECT name, rank_" .. mysql:escape_string(factionRank) .. " as rankname FROM factions WHERE id='" .. mysql:escape_string(tonumber(factionID)) .. "'")
+            
+                            --if (factionResult) then
+                                --accounts[i][7] = factionResult["name"]
+                               -- accounts[i][8] = factionResult["rankname"]
+                                
+                             --   if (string.len(accounts[i][7])>53) then
+                                    --accounts[i][7] = string.sub(accounts[i][7], 1, 32) .. "..."
+                              --  end
+                            --else
+                                accounts[i][7] = nil;
+                                accounts[i][8] = nil;
+                            --end
+                        end
+                        accounts[i][9] = tonumber(row["skin"]);
+                        accounts[i][10] = tonumber(row["llastlogin"]);
+                        i = i + 1
+    
+                    end
+                end
+
+               -- local i = 1;
+               -- outputDebugString("result elott"..#character)
+
+               --[[
 
                 if (result) then
                     local row = result[1];
@@ -123,7 +179,9 @@ function sendAccounts(thePlayer, id, isChangeChar)
                     accounts[i][1] = tonumber(row["id"]);
                     accounts[i][2] = row["charactername"];
 
-                    --outputChatBox(tostring(accounts[i][1]))
+                    --outputChatBox(tostring(accounts[2][2]))
+                    outputDebugString("resultba 1:"..#result)
+
                     
                     if (tonumber(row["cked"]) or 0) > 0 then
                         accounts[i][3] = 1;
@@ -159,6 +217,8 @@ function sendAccounts(thePlayer, id, isChangeChar)
                     i = i + 1
 
                 end
+
+                ]]--
                 triggerClientEvent(thePlayer, "showCharacterSelection", thePlayer, accounts);
             else
                 triggerClientEvent(thePlayer, "showCharacterSelection", thePlayer, accounts);
@@ -177,14 +237,14 @@ function sendAccounts(thePlayer, id, isChangeChar)
 end
 
 function storeEmail(email)
-	local accountid = getElementData(source, "acc:charid");
+	local accountid = getElementData(source, "acc:accid");
     dbExec(database, "UPDATE accounts SET email=?", email, "WHERE accountid=?", accountid);
 end
 addEvent("storeEmail", true);
 addEventHandler("storeEmail", getRootElement(), storeEmail);
 
 function SpawnPlayerDashboard(found, skinID)
-    local accountid = getElementData(source, "acc:charid");
+    local accountid = getElementData(source, "acc:accid");
 
     if (found) then
 
@@ -206,7 +266,8 @@ function SpawnPlayerDashboard(found, skinID)
         end	
     else
 
-        spawnPlayer(source, 258.43417358398, -41.489139556885, 1002.0234375, 268.19247436523, math.random(1,312), 14, 65000+accountid);
+       -- spawnPlayer(source, 258.43417358398, -41.489139556885, 1002.0234375, 268.19247436523, math.random(1,312), 14, 65000+accountid);
+       spawnPlayer(source, 258.43417358398, -41.489139556885, 1002.0234375, 268.19247436523, 0, 14, 65000+accountid);
 
         local rand = math.random(1,6)
         if (rand==1) then
@@ -255,7 +316,7 @@ function createCharacter(name, gender, skincolour, weight, height, fatness, musc
     
 	--local result = mysql:query("SELECT charactername FROM characters WHERE charactername='" .. safecharname .. "'")
 
-	local accountID = getElementData(source, "acc:charid");
+	local accountID = getElementData(source, "acc:accid");
 	local accountUsername = getElementData(source, "acc:uname");
 
 	local npid = nil;
@@ -283,7 +344,7 @@ function createCharacter(name, gender, skincolour, weight, height, fatness, musc
 		local salt = "fingerprintscotland";
 		local fingerprint = md5(salt .. charname);
 		--local id = mysql:query_insert_free("INSERT INTO characters SET charactername='" .. safecharname .. "', x='" .. mysql:escape_string(x) .. "', y='" .. mysql:escape_string(y) .. "', z='" .. mysql:escape_string(z) .. "', rotation='" .. mysql:escape_string(r) .. "', faction_id='-1', transport='" .. mysql:escape_string(transport) .. "', gender='" .. mysql:escape_string(gender) .. "', skincolor='" .. mysql:escape_string(skincolour) .. "', weight='" .. mysql:escape_string(weight) .. "', height='" .. mysql:escape_string(height) .. "', muscles='" .. mysql:escape_string(muscles) .. "', fat='" .. mysql:escape_string(fatness) .. "', description='" .. mysql:escape_string(description) .. "', account='" .. mysql:escape_string(accountID) .. "', skin='" .. mysql:escape_string(skin) .. "', lastarea='" .. mysql:escape_string(lastarea) .. "', age='" .. mysql:escape_string(age) .. "', fingerprint='" .. mysql:escape_string(fingerprint) .. "', lang1=" .. mysql:escape_string(language) .. ", lang1skill=100, currLang=1" )
-        local id = dbExec(database, "INSERT INTO characters SET charactername=?, x=?, y=?, z=?, faction_id=?, transport=?, gender=?, skincolor=?, weight=?,  height=?, muscles=?, fat=?, description=?, accountid=?, skin=?, lastarea=?, age=?, fingerprint=?, lang1=?, lang1skill=?, currLang=?", charname, x, y, z, "-1", transport, gender, skincolour, weight, weight, muscles, fatness, description, accountID, skin, lastarea, age, fingerprint, language, "100", "1");
+        local id = dbExec(database, "INSERT INTO characters SET charactername=?, x=?, y=?, z=?, faction_id=?, transport=?, gender=?, skincolor=?, weight=?, height=?, muscles=?, fat=?, description=?, accountid=?, skin=?, lastarea=?, age=?, fingerprint=?, lang1=?, lang1skill=?, currLang=?", charname, x, y, z, "-1", transport, gender, skincolour, weight, weight, muscles, fatness, description, accountID, skin, lastarea, age, fingerprint, language, "100", "1");
 
 		if (id) then
 			--exports['anticheat-system']:changeProtectedElementDataEx(source, "dbid", id, false)
@@ -326,8 +387,8 @@ function spawnCharacter(charname, version)
 	--takeAllWeapons(client)
 	source = client
 	
-	local id = getElementData(client, "acc:charid")
-	charname = string.gsub(tostring(charname), " ", "_")
+	local id = getElementData(client, "acc:accid");
+	charname = string.gsub(tostring(charname), " ", "_");
 	
 	--local safecharname = mysql:escape_string(charname)
 	
@@ -336,61 +397,70 @@ function spawnCharacter(charname, version)
 
 	--local data = mysql:query_fetch_assoc("SELECT * FROM characters WHERE charactername='" .. safecharname .. "' AND account='" .. mysql:escape_string(id) .. "' AND cked = 0")
 	
-    local data = data2[1]
+    local data = data2[1];
 
 	if (data) then
-		local id = tonumber(data["acc:charid"])
-		local currentid = getElementData(source, "acc:id")
+		local id = tonumber(data["acc:accid"]);
+		local currentid = getElementData(source, "acc:id");
 
-		local x = tonumber(data["x"])
-		local y = tonumber(data["y"])
-		local z = tonumber(data["z"])
-		local rot = tonumber(data["rotation"])
+		local x = tonumber(data["x"]);
+		local y = tonumber(data["y"]);
+		local z = tonumber(data["z"]);
+		local rot = tonumber(data["rotation"]);
 
-		local interior = tonumber(data["interior"])
-		local dimension = tonumber(data["dimension"])
-		local health = tonumber(data["health"])
+		local interior = tonumber(data["interior"]);
+		local dimension = tonumber(data["dimension"]);
+		local health = tonumber(data["health"]);
 
-		local skin = tonumber(data["skin"])
-		local fingerprint = tostring(data["fingerprint"])
+		local skin = tonumber(data["skin"]);
+		local fingerprint = tostring(data["fingerprint"]);
 
-		local factionrank = tonumber(data["faction_rank"])
-		local gender = tonumber(data["gender"])
+		local factionrank = tonumber(data["faction_rank"]);
+		local gender = tonumber(data["gender"]);
 
-		local age = data["age"]
-		local race = tonumber(data["skincolor"])
-		local weight = data["weight"]
-		local height = data["height"]
-		local desc = data["description"]
+		local age = data["age"];
+		local race = tonumber(data["skincolor"]);
+		local weight = data["weight"];
+		local height = data["height"];
+		local desc = data["description"];
 
-		setPlayerNametagShowing(source, true)
+		setPlayerNametagShowing(source, true);
 
 
-		setPlayerName(source, tostring(charname))
-        local fixedName = string.gsub(tostring(charname), "_", " ")
-        setPlayerNametagText(source, tostring(fixedName))
+		setPlayerName(source, tostring(charname));
+        local fixedName = string.gsub(tostring(charname), "_", " ");
+        setPlayerNametagText(source, tostring(fixedName));
 		-- Server message
-		clearChatBox(source)
-		outputChatBox("* " .. charname .. " karaktere sikeresen betöltve.", source, 0, 255, 0)
+		clearChatBox(source);
+		outputChatBox("* " .. charname .. " karaktere sikeresen betöltve.", source, 0, 255, 0);
 
-		outputChatBox("(( Segítségre van szükséged? Használd a '/helpme' parancsot! ))", source, 255, 194, 14)
-		outputChatBox("(( Ha itt se találtad meg a választ, használd az interaktív menünket -> /? ))", source, 255, 194, 14)
+		outputChatBox("(( Segítségre van szükséged? Használd a '/helpme' parancsot! ))", source, 255, 194, 14);
+		outputChatBox("(( Ha itt se találtad meg a választ, használd az interaktív menünket -> /? ))", source, 255, 194, 14);
 		--triggerClientEvent (source, "LoginZeneStop")
 
-		setPedGravity ( source,0.008 )
+		setPedGravity ( source,0.008 );
 		--setElementData(source, "superman:flying", false)
-		setPedAnimation(source, false)
-		setElementVelocity(source, 0, 0, 0)
+		setPedAnimation(source, false);
+		setElementVelocity(source, 0, 0, 0);
 		
 
-		setElementFrozen(source, false)
+		setElementFrozen(source, false);
+        -- blindfolds
+		if (blindfold==1) then
+			--exports['anticheat-system']:changeProtectedElementDataEx(source, "blindfold", 1)
+			outputChatBox("Your character is blindfolded. If this was an OOC action, please contact an administrator via F2.", source, 255, 194, 15)
+			--fadeCamera(player, false)
+		else
+			fadeCamera(source, true, 2)
+			setTimer(blindfoldFix, 5000, 1, source)
+		end
 		
 		-- Load the character info
-		setElementHealth(source, health)
+		setElementHealth(source, health);
 		--setPedArmor(source, armor)
 
 
-        spawnPlayer(source, x, y, z, rot, skin)
+        spawnPlayer(source, x, y, z, rot, skin);
         setCameraTarget(source, source);
         fadeCamera(source, true);
         showCursor(source, false);
@@ -398,27 +468,148 @@ function spawnCharacter(charname, version)
 		setElementDimension(source, dimension)
 		setElementInterior(source, interior, x, y, z)
 		setCameraInterior(source, interior)
+
+
 		
 
 		-- LAST LOGIN
         dbExec(database, "UPDATE characters SET lastlogin=NOW() WHERE id=?", id);
 			
-		triggerEvent("onCharacterLogin", source, charname, factionID)
+		triggerEvent("onCharacterLogin", source, charname, factionID);
 		
 
 		--triggerClientEvent(source, "updateHudClock", source)
 	else
-		outputDebugString( "Spawning Char failed: ")
+		outputDebugString( "Spawning Char failed: ");
 	end
 end
-addEvent("onCharacterLogin", false)
-addEvent("spawnCharacter", true)
-addEventHandler("spawnCharacter", getRootElement(), spawnCharacter)
+addEvent("onCharacterLogin", false);
+addEvent("spawnCharacter", true);
+addEventHandler("spawnCharacter", getRootElement(), spawnCharacter);
+
+function blindfoldFix(player)
+	fadeCamera(player, true, 2)
+end
+
+function sendEditingInformation(charname)
+	local qh = dbQuery(database, "SELECT description, age, weight, height, gender FROM characters WHERE charactername=? ", charname);
+    local result = dbPoll(qh, 500);
+
+	local description = tostring(result["description"]);
+	local age = tostring(result["age"]);
+	local weight = tostring(result["weight"]);
+	local height = tostring(result["height"]);
+	local gender = tonumber(result["gender"]);
+	
+	triggerClientEvent(client, "sendEditingInformation", client, height, weight, age, description, gender)
+end
+addEvent("requestEditCharInformation", true);
+addEventHandler("requestEditCharInformation", getRootElement(), sendEditingInformation);
 
 
+function updateEditedCharacter(charname, height, weight, age, description)
+    charname = string.gsub(tostring(charname), " ", "_");
+    dbExec(database, "UPDATE characters SET description=?, height=?, weight=?, age=?", description, height, weight, age, "WHERE charactername=?", charname);
+end
+addEvent("updateEditedCharacter", true);
+addEventHandler("updateEditedCharacter", getRootElement(), updateEditedCharacter);
 
 
+function deleteCharacterByName(charname)
+	
+	--local fixedName = mysql:escape_string(string.gsub(tostring(charname), " ", "_"))
+    local charname2 = string.gsub(tostring(charname), " ", "_");
 
+	local accountID = getElementData(client, "acc:id");
+
+	--local result = mysql:query_fetch_assoc("SELECT id FROM characters WHERE charactername='" .. fixedName .. "' AND account='" .. mysql:escape_string(accountID) .. "' LIMIT 1")
+	local qh = dbQuery(database, "SELECT * FROM characters WHERE charactername=? ", charname2);
+    local result = dbPoll(qh, 500);
+
+    --outputDebugString(tostring(result[1]["id"]))
+    local charid = tonumber(result[1]["id"]);
+   -- outputDebugString("charid1lol:".. charid)
+	if charid then -- not ck'ed
+		-- delete all in-game vehicles
+        --[[
+		for key, value in pairs( getElementsByType( "vehicle" ) ) do
+			if isElement( value ) then
+				if getElementData( value, "owner" ) == charid then
+					call( getResourceFromName( "item-system" ), "deleteAll", 3, getElementData( value, "dbid" ) )
+					destroyElement( value )
+				end
+			end
+		end
+		mysql:query_free("DELETE FROM vehicles WHERE owner = " .. mysql:escape_string(charid) )
+
+        
+
+		-- logs the deletion of the characters
+		local accountUsername = getElementData(client, "gameaccountusername")
+		--exports.logs:logMessage("[DELETE CHARACTER] #" .. accountID .. "-" .. accountUsername .. " has deleted character #" .. charid .. "-" .. charname .. ".", 31)
+
+		-- un-rent all interiors
+		local old = getElementData( client, "dbid" )
+		--exports['anticheat-system']:changeProtectedElementDataEx( client, "dbid", charid )
+		local result = mysql:query("SELECT id FROM interiors WHERE owner = " .. mysql:escape_string(charid) .. " AND type != 2" )
+		if result then
+			while true do
+				local row = mysql:fetch_assoc()
+				if not row then break end
+				
+				local id = tonumber(row["id"])
+				call( getResourceFromName( "interior-system" ), "publicSellProperty", client, id, false, false )
+			end
+		end
+		--exports['anticheat-system']:changeProtectedElementDataEx( client, "dbid", old )
+		
+		-- get rid of all items
+		mysql:query_free("DELETE FROM items WHERE type = 1 AND owner = " .. mysql:escape_string(charid) )
+
+
+		]]-- ezt csak msot vesszuk ki
+
+		-- finally delete the character
+		--mysql:query_free("DELETE FROM characters WHERE id='" .. mysql:escape_string(charid) .. "' AND account='" .. mysql:escape_string(accountID) .. "' LIMIT 1")
+        dbExec(database, "DELETE FROM characters WHERE id=?", charid);
+    end
+	--sendAccounts(client, accountID)
+	--showChat(client, true)
+    if (charid) then
+        dbFree(qh);
+    end
+end
+addEvent("deleteCharacter", true);
+addEventHandler("deleteCharacter", getRootElement(), deleteCharacterByName);
+
+
+function cguiSetNewPassword(oldPassword, newPassword)
+	
+	local gameaccountID = getElementData(source, "acc:accid");
+    local safeoldpassword = hash("sha512", oldPassword);
+	local safenewpassword = hash("sha512", newPassword);
+	
+    local qh = dbQuery(database, "SELECT username FROM accounts WHERE id=? ", gameaccountID, "AND password=?", safeoldpassword);
+    local result = dbPoll(qh, 500);
+	
+	if not (result) or (#result==0) then
+		outputChatBox("A beirt jelenlegi jelszavad hibas", client, 255, 0, 0);
+	else
+		local update = dbExec(database, "UPDATE accounts SET password=?", safenewpassword, "WHERE id=?", gameaccountID);
+
+		if (update) then
+			outputChatBox("Sikeresen lecserelted a jelszavad erre:'" .. newPassword .. "'", client, 0, 255, 0);
+		else
+			outputChatBox("Error 100004 - Report on forums.", client, 255, 0, 0);
+		end
+	end
+
+    if (result) then
+        dbFree(qh);
+    end
+end
+addEvent("cguiSavePassword", true);
+addEventHandler("cguiSavePassword", getRootElement(), cguiSetNewPassword);
 
 
 function quitPlayer()

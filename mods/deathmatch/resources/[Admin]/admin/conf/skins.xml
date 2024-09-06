@@ -2,6 +2,46 @@
   <!--
     Special thanks to Talidan and Slothman for the skins list
   -->
+	<group name="Special">
+		<skin model="1" name="Truth" />
+		<skin model="2" name="Maccer" />
+                <skin model="5" name="Big Bear(Large)"/>
+                <skin model="6" name="White Croupier"/>
+                <skin model="8" name="Cab Driver"/>
+                <skin model="42" name="Suzie"/>
+                <skin model="86" name="Tracksuit Girl (Pink)" />
+		<skin model="265" name="Tenpenny" />
+		<skin model="266" name="Pulaski" />
+		<skin model="267" name="Hern" />
+		<skin model="268" name="Dwayne" />
+		<skin model="269" name="Big Smoke" />
+		<skin model="270" name="Sweet" />
+		<skin model="271" name="Ryder" />
+		<skin model="272" name="Forelli Guy" />
+		<skin model="290" name="Rose" />
+		<skin model="291" name="Kent Paul" />
+		<skin model="292" name="Cesar" />
+		<skin model="293" name="OG Loc" />
+		<skin model="294" name="Wuzi Mu" />
+		<skin model="295" name="Mike Toreno" />
+		<skin model="296" name="Jizzy" />
+		<skin model="297" name="Madd Dogg" />
+		<skin model="298" name="Catalina" />
+		<skin model="299" name="Claude from GTA 3" />
+		<skin model="300" name="Ryder" />
+		<skin model="301" name="Ryder Robber" />
+		<skin model="302" name="Emmet" />
+		<skin model="303" name="Andre" />
+		<skin model="304" name="Kendl" />
+		<skin model="305" name="Jethro" />
+		<skin model="306" name="Zero" />
+		<skin model="307" name="T-bone Mendez" />
+		<skin model="308" name="Sindaco Guy" />
+		<skin model="309" name="Janitor" />
+		<skin model="310" name="Big Bear" />
+		<skin model="311" name="Big Smoke with Vest" />
+		<skin model="312" name="Physco" />
+	</group>
 	<group name="Beach">
 		<skin model="18" name="Black Beachguy" />
 		<skin model="45" name="Beach Mustache" />
@@ -130,6 +170,8 @@
 		<skin model="287" name="Army" />
 	</group>
 	<group name="Police">
+                <skin model="3" name="Deputy Officer"/>
+                <skin model="4" name="Sheriff"/>
 		<skin model="190" name="Barbara Schternvart" />
 		<skin model="246" name="Cop Stripper" />
 		<skin model="280" name="Cop 1" />
@@ -171,6 +213,7 @@
 		<skin model="17" name="Black suit" />
 		<skin model="57" name="Chinese Businessman" />
 		<skin model="61" name="Pilot" />
+                <skin model="65" name="Air Traffic Controller (1)"/>
 		<skin model="76" name="Businesswoman 1" />
 		<skin model="141" name="Cute Librarian" />
 		<skin model="147" name="Sigmund Freud" />
@@ -185,6 +228,8 @@
 		<skin model="228" name="Japanese Businessman 3" />
 		<skin model="255" name="Limo Driver" />
 		<skin model="263" name="Asian Hostess" />
+		<skin model="273" name="Reporter"/>
+		<skin model="289" name="Air Traffic Controller (2)"/>
 	</group>
 	<group name="Fighters">
 		<skin model="49" name="Ninja Sensei" />

@@ -207,6 +207,9 @@ function CreateMainUI()
     guiSetAlpha(bLostPassword, 0.90);
     -- Lost Password Event Handler --
     addEventHandler("onClientGUIClick", bLostPassword, ValidateDetails);
+
+	setTimer(fadeWindow, 50, 20)
+
 end
 
 function ValidateDetails()
@@ -256,21 +259,27 @@ function ValidateDetails()
 			local saveInfo = guiCheckBoxGetSelected(chkRemember);
 			local autoLogin = guiCheckBoxGetSelected(chkAutoLogin);
 			triggerServerEvent("attemptLogin", getLocalPlayer(), username, hash("sha512",password));
+
+			local data2 = jsonGET("files/@save.json");
+            saveJSON2 = data2;
+			saveJSON2["HaveAccount"] = true;
             
             if (saveInfo) then
                 local data = jsonGET("files/@save.json");
                 saveJSON = data;
-
                 saveJSON["Username"] = username;
                 saveJSON["Password"] = password;
                 saveJSON["Clicked"] = true;
+				saveJSON["HaveAccount"] = true;
+				
             end
             jsonSAVE("files/@save.json", saveJSON);
 
             if (autoLogin) then
-                if saveJSON["Clicked"] == true then
+					saveJSON["Username"] = username;
+                	saveJSON["Password"] = password;
                     saveJSON["AutoLogin"] = true;
-                end
+					saveJSON["HaveAccount"] = true;
             else
             end
             jsonSAVE("files/@save.json", saveJSON);
@@ -293,17 +302,32 @@ function ValidateDetails()
 	end
 end
 
+function fadeWindow()
+	if (tabPanelMain) then
+		local alpha = guiGetAlpha(tabPanelMain)
+		local newalpha = alpha + 0.05
+		guiSetAlpha(tabPanelMain, newalpha)
+		
+		if(newalpha>=0.7) then
+			guiSetAlpha(tabPanelMain, 0.75)
+			guiSetInputEnabled(true)
+		end
+	end
+end
+
 function hideUI(regged)
 
 	--cleanupEmail()
 	
 	if (tabPanelMain) then
 		destroyElement(tabPanelMain);
+		tabPanelMain = nil
 		showChat(false);
 	end
 	
 	if (tabPanelCharacter) then
 		destroyElement(tabPanelCharacter);
+		tabPanelCharacter = nil
 	end
 	
 	if (regged) then
@@ -315,10 +339,10 @@ function hideUI(regged)
 		bChangeAccount = nil
 	end
 	
-	--if wDelConfirmation then
-	--	destroyElement(wDelConfirmation)
-	---	wDelConfirmation = nil
-	--end
+	if wDelConfirmation then
+		destroyElement(wDelConfirmation)
+		wDelConfirmation = nil
+	end
 end
 addEvent("hideUI", true);
 addEventHandler("hideUI", getRootElement(), hideUI);
@@ -327,8 +351,9 @@ sent = false;
 function changedTab(tab)
 	if (tab==tabAchievements) and not (sent) then
 		sent = true;
-		lLoading = guiCreateLabel(0.45, 0.4, 0.3, 0.3, "Karakter Betöltése... Kérlek várj!", true, tabAchievements);
-		guiSetFont(lLoading, "default-bold-small");
+		commingsoon = guiCreateLabel(0.00, 0.00, 1.00, 1.00, "Hamarosan...", true, tabAchievements)
+        guiLabelSetHorizontalAlign(commingsoon, "center", false)
+        guiLabelSetVerticalAlign(commingsoon, "center")  
 		--triggerServerEvent("requestAchievements", getLocalPlayer())
 	end
 end
@@ -355,7 +380,7 @@ function showCharacterUI(accounts, firstTime, needsEmail)
 		--showChat(false);
 	end
 
-	setElementInterior (getLocalPlayer(),14);
+	setElementInterior (getLocalPlayer(), 14);
 	setCameraInterior(14);
 	setCameraMatrix(257.20394897461, -40.330944824219, 1002.5234375, 260.32162475586, -41.565814971924, 1002.0234375);
     fadeCamera(true);
@@ -372,6 +397,8 @@ function showCharacterUI(accounts, firstTime, needsEmail)
     tabAchievements = guiCreateTab("Díjaim", tabPanelCharacter); 
     addEventHandler("onClientGUITabSwitched", tabPanelCharacter, changedTab) 
 
+	displayAccountManagement();
+
 	local charsDead, charsAlive = 0, 0
 	
 	for key, value in pairs(accounts) do
@@ -386,10 +413,10 @@ function showCharacterUI(accounts, firstTime, needsEmail)
     guiSetFont(lCharacters, font0_roboto);
     guiLabelSetVerticalAlign(lCharacters, "center");
 
-    paneCharacters = guiCreateScrollPane(0.05, 0.11, 0.90, 0.80, true, tabCharacter);
+    paneCharacters = guiCreateScrollPane(0.05, 0.11, 0.90, 0.76, true, tabCharacter);
     paneChars = { };
-
 	local y = 0.0
+
     for key, value in pairs(accounts) do
 		local charname = string.gsub(tostring(accounts[key][2]), "_", " ");
 		local cked = tonumber(accounts[key][3]);
@@ -429,7 +456,7 @@ function showCharacterUI(accounts, firstTime, needsEmail)
 		local font0_roboto = guiCreateFont(":core-system/fonts/roboto.ttf", 10);
 
 		paneChars[key] = {};
-        paneChars[key][7] = guiCreateScrollPane(0.00, 0.00, 1.00, 0.23, true, paneCharacters)
+        paneChars[key][7] = guiCreateScrollPane(0.00, y, 1.00, 0.23, true, paneCharacters)
         paneChars[key][1] = guiCreateStaticImage(0.00, 0.00, 1.00, 1.00, ":account-system/img/charbg0.png", true, paneChars[key][7])
 		guiSetAlpha(paneChars[key][1], 0.90);
 		paneChars[key][8] = cked;
@@ -495,23 +522,26 @@ function showCharacterUI(accounts, firstTime, needsEmail)
         guiSetFont(lCreateName, font1_roboto);
         guiLabelSetHorizontalAlign(lCreateName, "center", false);
         guiLabelSetVerticalAlign(lCreateName, "center");
+
+		addEventHandler("onClientGUIClick", lCreateFakepane, selectedCharacter);
+
+		addEventHandler("onClientGUIDoubleClick", lCreateFakepane, dcselectedCharacter);
+		addEventHandler("onClientGUIDoubleClick", lCreateBG, dcselectedCharacter);
+		addEventHandler("onClientGUIDoubleClick", lCreateName, dcselectedCharacter);
+		addEventHandler("onClientGUIDoubleClick", lCreateImage, dcselectedCharacter);
 	end
 
-	addEventHandler("onClientGUIClick", lCreateFakepane, selectedCharacter);
 
-	addEventHandler("onClientGUIDoubleClick", lCreateFakepane, dcselectedCharacter);
-	addEventHandler("onClientGUIDoubleClick", lCreateBG, dcselectedCharacter);
-	addEventHandler("onClientGUIDoubleClick", lCreateName, dcselectedCharacter);
-	addEventHandler("onClientGUIDoubleClick", lCreateImage, dcselectedCharacter);
 
 	bEditChar = guiCreateButton(0.05, 0.875, 0.9, 0.05, "Karakter módosítása", true, tabCharacter);
-	--addEventHandler("onClientGUIClick", bEditChar, editSelectedCharacter, false);
+	addEventHandler("onClientGUIClick", bEditChar, editSelectedCharacter, false);
 
 	bDeleteChar = guiCreateButton(0.05, 0.925, 0.9, 0.05, "Karakter törlése", true, tabCharacter);
-	--addEventHandler("onClientGUIClick", bDeleteChar, deleteSelectedCharacter, false);
+	addEventHandler("onClientGUIClick", bDeleteChar, deleteSelectedCharacter, false);
 	
 	guiSetVisible(bEditChar, false);
 	guiSetVisible(bDeleteChar, false);
+	outputChatBox("Sikeres adat betöltés.",0,255,0);
 
     if (needsEmail) then
 		promptEmail();
@@ -538,18 +568,20 @@ function selectedCharacter(button, state)
 						key = i;
 					end
 				end
-				
+
 				guiBringToFront(paneChars[i][2]);
 				guiBringToFront(paneChars[i][3]);
 				guiBringToFront(paneChars[i][4]);
 				guiBringToFront(paneChars[i][5]);
 				guiBringToFront(paneChars[i][6]);
 				guiBringToFront(paneChars[i][7]);
-				
-				guiBringToFront(lCreateBG);
-				guiBringToFront(lCreateFakepane);
-				guiBringToFront(lCreateName);
-				guiBringToFront(lCreateImage);
+
+				if (#paneChars < 2) then
+					guiBringToFront(lCreateBG);
+					guiBringToFront(lCreateFakepane);
+					guiBringToFront(lCreateName);
+					guiBringToFront(lCreateImage);
+				end
 
 				if not (isthis) then
 					guiStaticImageLoadImage(paneChars[i][1], "img/charbg0.png");
@@ -565,14 +597,14 @@ function selectedCharacter(button, state)
 
 				if (cked==nil) then
 					fading = true;
-					--if (isTimer(tmrFadeIn)) then killTimer(tmrFadeIn) end
-					--tmrFadeIn = setTimer(fadePlayerIn, 50, 10)
+					if (isTimer(tmrFadeIn)) then killTimer(tmrFadeIn) end
+					tmrFadeIn = setTimer(fadePlayerIn, 50, 10)
 					
 					guiSetVisible(bEditChar, true);
 					guiSetVisible(bDeleteChar, true);
 				else
 					--local x, y, z = getElementPosition(getLocalPlayer())
-					--tmrFadeIn = setTimer(fadePlayerIn, 50, 10)
+					tmrFadeIn = setTimer(fadePlayerIn, 50, 10)
 					--exports.global:applyAnimation(getLocalPlayer(), "WUZI", "CS_Dead_Guy", -1, true, false, true)
 
 					guiSetVisible(bEditChar, false);
@@ -580,6 +612,7 @@ function selectedCharacter(button, state)
 				end
 			end
 		else
+			if (isTimer(tmrFadeIn)) then killTimer(tmrFadeIn) end
 			for key, value in ipairs(paneChars) do
 				--guiStaticImageLoadImage(paneChars[key][1], "img/charbg0.png")
 			end
@@ -593,10 +626,25 @@ function selectedCharacter(button, state)
 
 			triggerServerEvent("SpawnPlayerDashboard", getLocalPlayer(), found, skinID);
 
+			fading = true
+			tmrFadeIn = setTimer(fadePlayerIn, 50, 10)
+
 			guiSetVisible(bEditChar, false);
 			guiSetVisible(bDeleteChar, false);
 			end
 		guiSetInputEnabled(true);
+	end
+end
+
+fading = false
+tmrHideMouse = nil
+
+function fadePlayerIn(newChar)
+	local alpha = getElementAlpha(getLocalPlayer())
+	setElementAlpha(getLocalPlayer(), alpha+25)
+	if ((alpha+25)>=250) then
+		setElementAlpha(getLocalPlayer(), 255)
+		fading = false
 	end
 end
 
@@ -669,7 +717,7 @@ function promptEmail()
     guiEditSetMaxLength(tEmail, 54);
     tEmail2x = guiCreateEdit(0.30, 0.53, 0.63, 0.12, "", true, wEmail);
     guiEditSetMaxLength(tEmail2x, 54);
-    addEventHandler("onClientGUIChanged", tEmail, checkEmail, false);
+    addEventHandler("onClientGUIChanged", tEmail2x, checkEmail, false);
     bSubmitEmail = guiCreateButton(0.30, 0.74, 0.45, 0.14, "Mentés", true, wEmail);
     guiSetEnabled(bSubmitEmail, false);
     addEventHandler("onClientGUIClick", bSubmitEmail, submitEmail, false);
@@ -688,8 +736,9 @@ function checkEmail()
 	
 	local length = text:len();
 	local atSymbol = text:find("@");
-	
-	if ( length > 5 and atSymbol ~= nil ) then
+	local dotSymbol = text:find(".");
+
+	if ( length > 8 and atSymbol ~= nil and dotSymbol ~= nil) then
 		guiSetEnabled(bSubmitEmail, true);
 		guiSetAlpha(bSubmitEmail, 1.0);
 	else
@@ -739,6 +788,7 @@ function characterCreation()
     guiLabelSetHorizontalAlign(lRestrictions, "center", false);
     guiLabelSetColor(lRestrictions, 255, 0, 0);
     bNext = guiCreateButton(0.07, 0.70, 0.85, 0.13, "Tovább", true, tabCreationOne);
+	
     addEventHandler("onClientGUIClick", bNext, loadNextPage, false);
     bCancel = guiCreateButton(0.07, 0.85, 0.85, 0.13, "Mégse", true, tabCreationOne);
     addEventHandler("onClientGUIClick", bCancel, cancelCreation, false);
@@ -813,7 +863,7 @@ function cancelCreation(button, state)
     end
 
     bRotate = nil;
-    local playerid = getElementData(getLocalPlayer(), "acc:charid");
+    local playerid = getElementData(getLocalPlayer(), "acc:accid");
     setElementInterior(getLocalPlayer(), 14);
     setElementDimension(getLocalPlayer(), 65000+playerid);
     setElementPosition(getLocalPlayer(), 258.43417358398, -41.489139556885, 1002.0234375);
@@ -835,18 +885,18 @@ end
 
 rot = 120.0;
 function moveCameraToCreation()
-local pX, pY, pZ = getElementPosition(getLocalPlayer());
-local x = pX + math.cos(math.deg(rot))*2;
-local y = pY + math.sin(math.deg(rot))*2;
+	local pX, pY, pZ = getElementPosition(getLocalPlayer());
+	local x = pX + math.cos(math.deg(rot))*2;
+	local y = pY + math.sin(math.deg(rot))*2;
 
-local sight, eX, eY, eZ = processLineOfSight(pX, pY, pZ, x, y, pZ+1, true, true, false);
-    
-if (sight) then
-setCameraMatrix(eX, eY, eZ, pX, pY, pZ+0.2);
-else
-setCameraMatrix(x, y, pZ+1, pX, pY, pZ+0.2);
-end
-rot = rot + 0.0001;
+	local sight, eX, eY, eZ = processLineOfSight(pX, pY, pZ, x, y, pZ+1, true, true, false);
+		
+	if (sight) then
+		setCameraMatrix(eX, eY, eZ, pX, pY, pZ+0.2);
+	else
+		setCameraMatrix(x, y, pZ+1, pX, pY, pZ+0.2);
+	end
+	rot = rot + 0.0001;
 end
 
 
@@ -878,10 +928,10 @@ tabCreationTwo, fatInc, fatDec, lFat, lFatDesc, muscleInc, muscleDec, lMuscle, l
 lDescriptionNormal, lGender, rMale, rFemale, lSkinColour, rBlack, rWhite, rAsian, tempPane, lChangeSkin, nextSkin, prevSkin = nil;
 
 blackMales = {16, 18, 21, 22, 24, 25, 35, 36, 66, 67, 84, 222, 253, 260 };
-whiteMales = {303, 306, 23, 26, 29, 34, 35, 36, 37, 38, 43, 44, 45, 52, 53, 59, 61, 62, 68, 72, 99, 200, 204, 206, 209, 212, 213, 217, 230, 234, 235, 236, 247, 248, 250, 252, 254, 255 };
+whiteMales = {303, 306, 23, 26, 29, 34, 37, 43, 44, 45, 52, 59, 61, 62, 68, 72, 99, 200, 204, 206, 209, 212, 213, 217, 230, 234, 235, 236, 247, 248, 250, 252, 254, 255 };
 asianMales = {59, 203, 210, 227, 229};
-blackFemales = {9, 10, 11, 12, 13, 40, 76, 91, 139, 148, 190, 207, 215, 218, 219, 238, 243, 244, 245, 256 };
-whiteFemales = {12, 31, 38, 39, 40, 53, 54, 55, 56, 77, 85, 86, 87, 88, 89, 90, 91, 92, 201, 205, 214, 216, 224, 225, 226, 231, 232, 233, 237, 243, 246, 251, 257, 263 };
+blackFemales = {9, 10, 11, 12, 13, 40, 76, 139, 148, 190, 207, 215, 218, 219, 238, 243, 244, 245, 256 };
+whiteFemales = {12, 31, 38, 39, 53, 54, 55, 56, 77, 85, 86, 87, 88, 89, 90, 91, 92, 201, 205, 214, 216, 224, 225, 226, 231, 232, 233, 237, 243, 246, 251, 257, 263 };
 asianFemales = {38, 53, 54, 55, 56, 88, 224, 225, 226, 263};
 
 function characterCreationStep2Normal()
@@ -910,7 +960,7 @@ function characterCreationStep2Normal()
 
     rMale = guiCreateRadioButton(0.36, 0.21, 0.18, 0.05, "Férfi", true, tabCreationTwo);
     rFemale = guiCreateRadioButton(0.72, 0.21, 0.18, 0.05, "Nõ", true, tabCreationTwo);
-    guiRadioButtonSetSelected(rMale, true);
+   -- guiRadioButtonSetSelected(rMale, true);
     addEventHandler("onClientGUIClick", rMale, normalSetMale, false);
 	addEventHandler("onClientGUIClick", rFemale, normalSetFemale, false);
 
@@ -924,9 +974,11 @@ function characterCreationStep2Normal()
     tempPane = guiCreateScrollPane(0.31, 0.35, 0.62, 0.10, true, tabCreationTwo);
     rBlack = guiCreateRadioButton(0.06, 0.26, 0.23, 0.47, "Fekete", true, tempPane);
     rWhite = guiCreateRadioButton(0.36, 0.26, 0.23, 0.47, "Fehér", true, tempPane);
-    guiRadioButtonSetSelected(rWhite, true);
     rAsian = guiCreateRadioButton(0.64, 0.26, 0.23, 0.47, "Ázsiai", true, tempPane);
-
+	--guiRadioButtonSetSelected(rWhite, true);
+	addEventHandler("onClientGUIClick", rBlack, normalSetBlack, false);
+	addEventHandler("onClientGUIClick", rWhite, normalSetWhite, false);
+	addEventHandler("onClientGUIClick", rAsian, normalSetAsian, false);
 
     --/////////////
 	-- SKIN
@@ -940,9 +992,10 @@ function characterCreationStep2Normal()
     nextSkin = guiCreateButton(0.70, 0.51, 0.19, 0.06, "->", true, tabCreationTwo);
     addEventHandler("onClientGUIClick", nextSkin, adjustNormalSkin, false);
 
-
+	-- NEXT/BACK
     bNext = guiCreateButton(0.07, 0.70, 0.85, 0.13, "Tovább", true, tabCreationTwo);
     addEventHandler("onClientGUIClick", bNext, characterCreationStep5, false);
+
     bCancel = guiCreateButton(0.07, 0.85, 0.85, 0.13, "Mégse", true, tabCreationTwo);
     addEventHandler("onClientGUIClick", bCancel, cancelCreation, false);
 
@@ -1120,7 +1173,7 @@ function characterCreationStep5(button, state)
         guiLabelSetHorizontalAlign(lHeight, "center", false);
         guiLabelSetVerticalAlign(lHeight, "center");
 
-        tHeight = guiCreateEdit(0.63, 0.15, 0.23, 0.06, "182", true, tabCreationFive);
+        tHeight = guiCreateEdit(0.63, 0.15, 0.23, 0.06, "178", true, tabCreationFive);
         guiEditSetMaxLength(tHeight, 3);
         addEventHandler("onClientGUIChanged", tHeight, checkInput);
 
@@ -1161,6 +1214,7 @@ function characterCreationStep5(button, state)
 
         tCharDesc = guiCreateMemo(0.07, 0.51, 0.86, 0.18, "Írd le a karaktered vizuális megjelenését. Ezt a többi játékos is látni fogja.", true, tabCreationFive) ;
         addEventHandler("onClientGUIChanged", tCharDesc, checkInput);
+
 		--/////////////
 		-- NEXT/BACK
 		--/////////////
@@ -1284,14 +1338,49 @@ function characterCreationStep6(button, state)
             lLangPrevious = guiCreateButton(0.17, 0.50, 0.20, 0.06, "Vissza", true, tabCreationSix);
             lLangNext = guiCreateButton(0.66, 0.50, 0.20, 0.06, "Tovább", true, tabCreationSix);
 
+
+			--[[
+			
+				addEventHandler("onClientGUIClick", lLangPrevious,
+				function( button, state )
+					if button == "left" and state == "up" then
+						if language == 1 then
+							language = call( getResourceFromName( "language-system" ), "getLanguageCount" )
+						else
+							language = language - 1
+						end
+						guiSetText(lCharLanguage, call( getResourceFromName( "language-system" ), "getLanguageName", language ))
+					end
+				end, false
+			)
+			
+			addEventHandler("onClientGUIClick", lLangNext,
+				function( button, state )
+					if button == "left" and state == "up" then
+						if language == call( getResourceFromName( "language-system" ), "getLanguageCount" ) then
+							language = 1
+						else
+							language = language + 1
+						end
+						guiSetText(lCharLanguage, call( getResourceFromName( "language-system" ), "getLanguageName", language ))
+					end
+				end, false
+			)
+
+			]]--
+
             --- IDE KELL MAJD A NYELV VALTAS MEG ---
 
             Aszf = guiCreateCheckBox(0.25, 0.61, 0.70, 0.07, "Elfogadom a szerver szabalyzatat", false, true, tabCreationSix);
             guiSetFont(Aszf, font3_roboto);
 
-            bNext = guiCreateButton(0.07, 0.70, 0.85, 0.13, "Új karakter befejezése", true, tabCreationSix);
-            addEventHandler("onClientGUIClick", bNext, characterCreationFinal, false);
+			--/////////////
+			-- NEXT/BACK
+			--/////////////
 
+            bNext = guiCreateButton(0.07, 0.70, 0.85, 0.13, "Új karakter befejezése", true, tabCreationSix);
+			addEventHandler("onClientGUIClick", bNext, characterCreationFinal, false);
+		
             bCancel = guiCreateButton(0.07, 0.85, 0.85, 0.13, "Mégse", true, tabCreationSix);
             addEventHandler("onClientGUIClick", bCancel, cancelCreation, false);
         end
@@ -1334,16 +1423,19 @@ function aeroplaneEffect(button, state)
 	end
 end
 
+-- FINAL
 function characterCreationFinal(button, state)
+	if not (guiCheckBoxGetSelected(Aszf))then
+		showChat(true)
+		outputChatBox("Nem fogadtad el a szabalyzatot!", 255, 0, 0, true)
+		return
+	end
     if (source==bNext) and (button=="left") and (state=="up") and not (anim) then
-        --local train = guiRadioButtonGetSelected(rTrain)
 		local bus = guiRadioButtonGetSelected(rBus);
 		local aeroplane = guiRadioButtonGetSelected(rAeroplane);
 
-        if (train or bus or aeroplane) then
+        if (bus or aeroplane) then
 			local transport;
-			--if (train) then
-			--	transport = 0
 			if (bus) then
 				transport = 1;
 			elseif (aeroplane) then
@@ -1356,8 +1448,9 @@ function characterCreationFinal(button, state)
 			
 			-- cleanup
 			removeEventHandler("onClientRender", getRootElement(), moveCameraToCreation);
+			showChat(false)
 			
-			local playerid = getElementData(getLocalPlayer(), "acc:charid");
+			local playerid = getElementData(getLocalPlayer(), "acc:accid");
 			setElementInterior(getLocalPlayer(), 14);
 			setElementDimension(getLocalPlayer(), 65000+playerid);
 			setElementPosition(getLocalPlayer(), 258.43417358398, -41.489139556885, 1002.0234375);
@@ -1378,6 +1471,302 @@ function characterCreationFinal(button, state)
     end
 end
 
+--/////////////////////////////////////////////////////////////////
+--DISPLAY ACCOUNT MANAGEMENT
+--////////////////////////////////////////////////////////////////
+function displayAccountManagement()
+
+	-- ADMIN
+	local admin = getElementData(getLocalPlayer(), "acc:adminlevel")
+	lAdmin = guiCreateLabel(0.00, 0.04, 1.00, 0.07, "Admin: ", true, tabAccount)
+	guiSetFont(lAdmin, "default-bold-small")
+	guiLabelSetHorizontalAlign(lAdmin, "center", false)
+	guiLabelSetVerticalAlign(lAdmin, "center")
+	if (admin == 0) then
+		guiSetText(lAdmin, "Admin: Nem")
+	else
+		guiSetText(lAdmin, "Admin: Igen (" .. tostring(admin) .. ")")
+	end
+
+	-- MUTED
+	local muted = getElementData(getLocalPlayer(), "acc:muted")
+	lMuted = guiCreateLabel(0.00, 0.12, 1.00, 0.07, "Némítva: ", true, tabAccount)
+	guiSetFont(lMuted, "default-bold-small")
+	guiLabelSetHorizontalAlign(lMuted, "center", false)
+	guiLabelSetVerticalAlign(lMuted, "center")
+	if (muted == 0) then
+		guiSetText(lMuted, "Némítva: Nem")
+	else
+		guiSetText(lMuted, "Némítva: Igen")
+	end
+
+	--[[
+	
+		-- PlayedHours
+	local playhour = getElementData(getLocalPlayer(), "acc:playhour")
+	lPlayHour = guiCreateLabel(0.00, 0.19, 1.00, 0.07, "Jatszott orak: ", true, tabAccount)
+	guiSetFont(lPlayHour, "default-bold-small")
+	guiLabelSetHorizontalAlign(lPlayHour, "center", false)
+	guiLabelSetVerticalAlign(lPlayHour, "center")
+	if (playhour == 0) then
+		guiSetText(lMuted, "Jatszott orak: 0")
+	else
+		guiSetText(lMuted, "Jatszott orak: (" .. tostring(playhour) .. ")")
+	end
+
+	
+	-- Premium Points
+	local premiumpoint = getElementData(getLocalPlayer(), "acc:pp")
+	lPremiumPoint = guiCreateLabel(0.00, 0.26, 1.00, 0.07, "Premium pontok: ", true, tabAccount)
+	guiSetFont(lPremiumPoint, "default-bold-small")
+	guiLabelSetHorizontalAlign(lPremiumPoint, "center", false)
+	guiLabelSetVerticalAlign(lPremiumPoint, "center")
+	if (premiumpoint == 0) then
+		guiSetText(lMuted, "Premium pontok: 0")
+	else
+		guiSetText(lMuted, "Premium pontok: (" .. tostring(premiumpoint) .. ")")
+	end
+	
+	]]--
+
+
+	-- CHANGE PASSWORD
+	lChangePassword = guiCreateLabel(0.00, 0.36, 1.00, 0.07, "Jelszó váltás", true, tabAccount)
+	guiSetFont(lChangePassword, "default-bold-small")
+	guiLabelSetHorizontalAlign(lChangePassword, "center", false)
+	guiLabelSetVerticalAlign(lChangePassword, "center")
+
+	lCurrPassword = guiCreateLabel(0.02, 0.48, 0.24, 0.07, "Jelenlegi jelszavad:", true, tabAccount)
+	guiSetFont(lCurrPassword, "default-bold-small")
+	guiLabelSetHorizontalAlign(lCurrPassword, "right", false)
+	guiLabelSetVerticalAlign(lCurrPassword, "center")
+
+	tCurrPassword = guiCreateEdit(0.28, 0.48, 0.57, 0.07, "", true, tabAccount)
+	guiEditSetMasked(tCurrPassword, true)
+	guiEditSetMaxLength(tCurrPassword, 38)
+
+	lNewPassword1 = guiCreateLabel(0.02, 0.57, 0.24, 0.07, "Új jelszó:", true, tabAccount)
+	guiSetFont(lNewPassword1, "default-bold-small")
+	guiLabelSetHorizontalAlign(lNewPassword1, "center", false)
+	guiLabelSetVerticalAlign(lNewPassword1, "center")
+
+	tNewPassword1 = guiCreateEdit(0.28, 0.58, 0.57, 0.07, "", true, tabAccount)
+	guiEditSetMasked(tNewPassword1, true)
+	guiEditSetMaxLength(tNewPassword1, 38)
+
+	lNewPassword2 = guiCreateLabel(0.02, 0.67, 0.24, 0.07, "Új jelszó x2:", true, tabAccount)
+	guiSetFont(lNewPassword2, "default-bold-small")
+	guiLabelSetHorizontalAlign(lNewPassword2, "center", false)
+	guiLabelSetVerticalAlign(lNewPassword2, "center")
+
+	tNewPassword2 = guiCreateEdit(0.28, 0.67, 0.57, 0.07, "", true, tabAccount)
+	guiEditSetMasked(tNewPassword2, true)
+	guiEditSetMaxLength(tNewPassword2, 38)
+
+	bSavePass = guiCreateButton(152, 342, 182, 46, "Mentés", false, tabAccount)
+	addEventHandler("onClientGUIClick", bSavePass, savePassword, false)
+
+end
+
+function savePassword(button, state)
+	if (source==bSavePass) and (button=="left") and (state=="up") then
+		showChat(true)
+		local password = guiGetText(tCurrPassword)
+		local password1 = guiGetText(tNewPassword1)
+		local password2 = guiGetText(tNewPassword2)
+		
+		
+		if (string.len(password1)<6) or (string.len(password2)<6) then
+			outputChatBox("Az új jelszavad túl rövid! Legalább 6 vagy több karakteresnek kell lennie.", 255, 0, 0)
+		elseif (string.len(password)<6)  then
+			outputChatBox("A jelenlegi jelszavad túl rövid! Legalább 6 vagy több karakteresnek kell lennie.", 255, 0, 0)
+		elseif (string.find(password, ";", 0)) or (string.find(password, "'", 0)) or (string.find(password, "@", 0)) or (string.find(password, ",", 0)) then
+			outputChatBox("A jelenlegi jelszavad nem tartalmazhat ;,@'. karaktereket.", 255, 0, 0)
+		elseif (string.find(password1, ";", 0)) or (string.find(password1, "'", 0)) or (string.find(password1, "@", 0)) or (string.find(password1, ",", 0)) then
+			outputChatBox("Az új jelszavad nem tartalmazhat ;,@'. karaktereket.", 255, 0, 0)
+		elseif (password1~=password2) then
+			outputChatBox("A két jelszó nem egyezik!.", 255, 0, 0)
+		else
+			triggerServerEvent("cguiSavePassword", getLocalPlayer(), password, password1)
+		end
+	end
+end
+
+
+local charGender = 0
+function editSelectedCharacter(button, state)
+	if button=="left" and state=="up" and selectedChar and paneChars[selectedChar] then
+		triggerServerEvent("requestEditCharInformation", getLocalPlayer(), guiGetText(paneChars[selectedChar][2]))
+	end
+end
+
+function editCharacter(height, weight, age, description, gender)
+	if selectedChar and paneChars[selectedChar] then
+		charGender = gender
+		
+		guiSetVisible(tabPanelCharacter, false)
+		
+		local screenW, screenH = guiGetScreenSize()
+		
+		tabPanelCreation = guiCreateTabPanel(0.00, 0.36, 0.19, 0.32, true)
+        guiSetAlpha(tabPanelCreation, 0.75)
+		tabCreationFive = guiCreateTab("Karakter módosítása", tabPanelCreation)
+		
+
+		lCharmodification = guiCreateLabel(0.00, 0.02, 1.00, 0.08, "Karakter módosítás", true, tabCreationFive)
+        guiSetFont(lCharmodification, "default-bold-small")
+        guiLabelSetHorizontalAlign(lCharmodification, "center", false)
+        guiLabelSetVerticalAlign(lCharmodification, "center")
+
+		lInformation = guiCreateLabel(0.00, 0.10, 1.00, 0.11, tostring(guiGetText(paneChars[selectedChar][2])), true, tabCreationFive)
+        guiLabelSetHorizontalAlign(lInformation, "center", false)
+        guiLabelSetVerticalAlign(lInformation, "center")
+
+		--lInformation = guiCreateLabel(0.1, 0.025, 0.8, 0.15, tostring(guiGetText(paneChars[selectedChar][2])), true, tabCreationFive) 
+		--guiSetFont(lInformation, "sa-header")
+		
+		--/////////////
+		-- HEIGHT
+		--/////////////
+		lHeight = guiCreateLabel(0.02, 0.21, 0.43, 0.10, "Magasság (cm)(100 és 200 között):", true, tabCreationFive)
+        guiLabelSetHorizontalAlign(lHeight, "center", false)
+        guiLabelSetVerticalAlign(lHeight, "center")
+		
+		tHeight = guiCreateEdit(0.47, 0.23, 0.42, 0.07, "", true, tabCreationFive)
+        guiEditSetMaxLength(tHeight, 3)
+		addEventHandler("onClientGUIChanged", tHeight, checkInput)
+		
+		--/////////////
+		-- WEIGHT
+		--/////////////
+		lWeight = guiCreateLabel(0.02, 0.31, 0.43, 0.10, "Súly (kg)(40 és 200 között):", true, tabCreationFive)
+        guiLabelSetHorizontalAlign(lWeight, "center", false)
+        guiLabelSetVerticalAlign(lWeight, "center")
+
+        tWeight = guiCreateEdit(0.47, 0.33, 0.42, 0.07, "", true, tabCreationFive)
+        guiEditSetMaxLength(tWeight, 3)
+		addEventHandler("onClientGUIChanged", tWeight, checkInput)
+		
+		--/////////////
+		-- AGE
+		--/////////////
+		lAge = guiCreateLabel(0.02, 0.41, 0.43, 0.10, "Életkor (18 és 80 között):", true, tabCreationFive)
+        guiLabelSetHorizontalAlign(lAge, "center", false)
+        guiLabelSetVerticalAlign(lAge, "center")
+
+        tAge = guiCreateEdit(0.47, 0.42, 0.42, 0.07, "", true, tabCreationFive)
+        guiEditSetMaxLength(tAge, 2)
+		addEventHandler("onClientGUIChanged", tAge, checkInput)
+		
+		--/////////////
+		-- DESCRIPTION
+		--/////////////
+		lCharDesc = guiCreateLabel(0.02, 0.51, 0.53, 0.08, "Karakter leírása(30 és 100 karakter között):", true, tabCreationFive)
+        guiLabelSetHorizontalAlign(lCharDesc, "center", false)
+        guiLabelSetVerticalAlign(lCharDesc, "center")
+
+        tCharDesc = guiCreateMemo(0.02, 0.58, 0.90, 0.27, "", true, tabCreationFive)
+		addEventHandler("onClientGUIChanged", tCharDesc, checkInput)
+		
+		--/////////////
+		-- SAVE/CANCEL
+		--/////////////
+		bNext = guiCreateButton(0.51, 0.87, 0.39, 0.10, "Mentés", true, tabCreationFive)  
+		--addEventHandler("onClientGUIClick", bNext, validatemodifydata, false)
+		addEventHandler("onClientGUIClick", bNext, updateEditedCharacter, false)
+		
+		bCancel = guiCreateButton(0.04, 0.87, 0.39, 0.10, "Mégse", true, tabCreationFive)
+		addEventHandler("onClientGUIClick", bCancel,
+			function()
+				destroyElement(tabPanelCreation)
+				tabPanelCreation = nil
+				guiSetVisible(tabPanelCharacter, true)
+			end, false)
+	end
+end
+addEvent("sendEditingInformation", true)
+addEventHandler("sendEditingInformation", getLocalPlayer(), editCharacter)
+
+function validatemodifydata()
+	local screenW, screenH = guiGetScreenSize()
+        modifyCheckGui = guiCreateWindow((screenW - 598) / 2, (screenH - 217) / 2, 598, 217, "Megerosites", false)
+        guiWindowSetSizable(modifyCheckGui, false)
+
+        lTextmodifycheck = guiCreateLabel(0.22, 0.41, 0.57, 0.18, "Biztosan szeretned megvaltoztani a karaktered adatait?", true, modifyCheckGui)
+        guiLabelSetHorizontalAlign(lTextmodifycheck, "center", false)
+        guiLabelSetVerticalAlign(lTextmodifycheck, "center")
+        bCheckNo = guiCreateButton(0.22, 0.71, 0.21, 0.18, "Nem", true, modifyCheckGui)
+		addEventHandler("onClientGUIClick", bCancel, checkremover, false)
+
+        bCheckYes = guiCreateButton(0.55, 0.71, 0.21, 0.18, "Igen", true, modifyCheckGui)
+		addEventHandler("onClientGUIClick", bCheckYes, updateEditedCharacter, false)
+end
+
+function checkremover()
+	destroyElement(modifyCheckGui)
+	modifyCheckGui = nil
+	--outputDebugString("visszakene")
+end
+
+function updateEditedCharacter()
+	if heightvalid and weightvalid and descvalid and agevalid and selectedChar then
+		height = tonumber(guiGetText(tHeight))
+		weight = tonumber(guiGetText(tWeight))
+		age = tonumber(guiGetText(tAge))
+		description = guiGetText(tCharDesc)
+		
+		triggerServerEvent("updateEditedCharacter", getLocalPlayer(), guiGetText(paneChars[selectedChar][2]), height, weight, age, description)
+		
+		destroyElement(tabPanelCreation)
+		destroyElement(modifyCheckGui)
+		tabPanelCreation = nil
+		guiSetVisible(tabPanelCharacter, true)
+		
+		-- update character screen (avoids us from reloading all accounts)
+		local gender = "Férfi" 
+		if charGender == 1 then
+			gender = "Nő"
+		end
+		guiSetText(paneChars[selectedChar][4], age .. " éves " .. gender .. ".", true)
+	end
+end
+
+function deleteSelectedCharacter(button, state)
+	if (button=="left") and (state=="up") and (source==bDeleteChar) then
+		if (selectedChar) and not wDelConfirmation then
+			local charname = tostring(guiGetText(paneChars[selectedChar][2]))
+			local sx, sy = guiGetScreenSize() 
+			wDelConfirmation = guiCreateWindow(sx/2 - 125,sy/2 - 50,250,100,"Törlés megerõsítése", false)
+			local lQuestion = guiCreateLabel(0.05,0.25,0.9,0.3,"Biztosan törölni szeretnéd "..charname.."-t ?",true,wDelConfirmation)
+							  guiLabelSetHorizontalAlign (lQuestion,"center",true)
+			local bYes = guiCreateButton(0.1,0.65,0.37,0.23,"Igen",true,wDelConfirmation)
+			local bNo = guiCreateButton(0.53,0.65,0.37,0.23,"Mégse",true,wDelConfirmation)
+			addEventHandler("onClientGUIClick", getRootElement(), 
+				function(button)
+					if (button=="left") then
+						if source == bYes then
+							triggerServerEvent("deleteCharacter", getLocalPlayer(), charname)
+							deleteCharacter(charname)
+						elseif source == bNo then
+							if wDelConfirmation then
+								destroyElement(wDelConfirmation)
+								wDelConfirmation = nil
+							end
+						end
+					end
+				end
+			)
+		end
+	end
+end
+
+function deleteCharacter(charname)
+	hideUI()
+	tableAccounts[selectedChar] = nil
+	showCharacterUI(tableAccounts, false)
+end
+
+
 function charCreateSuccess()
     outputChatBox("A karakteredet sikeresen letrehoztuk!", 0, 255, 0);
 end
@@ -1396,11 +1785,11 @@ function drawnDetails()
 	if monthday < 10 then
 	    str2 = "0" .. str2;
 	end
-	local datum =  "2023."..str.."."..str2;
+	local datum =  "2024."..str.."."..str2;
 	local version = "2.0";
 
     local sx, sy = guiGetScreenSize();
-	local id = getElementData(getLocalPlayer(), "acc:charid");
+	local id = getElementData(getLocalPlayer(), "acc:accid");
 	if (id) then
     	dxDrawText("ZeroMta ["..version.."] -  AccountID: "..id.." - "..datum, sx - 85, sy - 12/2, sx - 85, sy - 12/2, tocolor(255, 255, 255, 100), 1, "default-bold", "right", "center", false, false, false, true)
 	else

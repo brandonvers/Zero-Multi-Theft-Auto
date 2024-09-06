@@ -2,293 +2,187 @@
 *
 *	Multi Theft Auto - Admin Panel
 *
-*	client/admin_gui.lua
+*	admin_gui.lua
 *
 *	Original File by lil_Toady
 *
 **************************************]]
 _guiprotected = {}
 
-function guiCreateHeader(x, y, w, h, text, relative, parent)
-    local header = guiCreateLabel(x, y, w, h, text, relative, parent)
-    if (header) then
-        guiLabelSetColor(header, 255, 0, 0)
-        guiSetFont(header, "default-bold-small")
-        return header
-    end
-    return false
+local lists = {}
+
+function guiCreateHeader ( x, y, w, h, text, relative, parent )
+	local header = guiCreateLabel ( x, y, w, h, text, relative, parent )
+	if ( header ) then
+		guiLabelSetColor ( header, 255, 0, 0 )
+		guiSetFont ( header, "default-bold-small" )
+		return header
+	end
+	return false
 end
 
-function guiCreateInnerImage(image, parent, above)
-    local sx, sy = guiGetSize(parent, false)
-    local img
-    if (above) then
-        img = guiCreateStaticImage(0, 0, 0, 0, image, false, getElementParent(parent))
-        local px, py = guiGetPosition(parent, false)
-        guiSetPosition(img, px + sx - sy, py, false)
-    else
-        img = guiCreateStaticImage(0, 0, 0, 0, image, false, parent)
-        guiSetPosition(img, sx - sy, 0, false)
-    end
-    guiSetSize(img, sy, sy, false)
-    return img
+_guiCreateTab = guiCreateTab
+function guiCreateTab ( name, parent, right )
+	local tab = _guiCreateTab ( name, parent )
+	if ( tab ) then
+		if ( right ) then
+			right = "general.tab_"..right
+			if ( not hasPermissionTo ( right ) ) then
+				guiSetEnabled ( tab, false )
+				_guiprotected[right] = tab
+			end
+		end
+		return tab
+	end
+	return false
 end
 
-local _guiCreateWindow = guiCreateWindow
-function guiCreateWindow(...)
-    local window = _guiCreateWindow(...)
-    if (window) then
-        guiWindowSetSizable(window, false)
-        return window
-    end
-    return nil
+_guiCreateButton = guiCreateButton
+function guiCreateButton ( x, y, w, h, text, relative, parent, right )
+	local button = _guiCreateButton ( x, y, w, h, text, relative, parent )
+	if ( button ) then
+		if ( right ) then
+			right = "command."..right
+			if ( not hasPermissionTo ( right ) ) then
+				guiSetEnabled ( button, false )
+				_guiprotected[right] = button
+			end
+		end
+		guiSetFont ( button, "default-bold-small" )
+		return button
+	end
+	return false
 end
 
-local _guiCreateTab = guiCreateTab
-function guiCreateTab(name, parent, right)
-    local tab = _guiCreateTab(name, parent)
-    if (tab) then
-        if (right) then
-            right = "general.tab_" .. right
-            if (not hasPermissionTo(right)) then
-                guiSetEnabled(tab, false)
-                _guiprotected[right] = tab
-            end
-        end
-        return tab
-    end
-    return false
+function guiCreateList(x, y, w, h, tabHeight, header, relative, parent, right)
+	local list = guiCreateButton(x, y, w, h, header, relative, parent, right)
+	
+	local parentWidth, parentHeight = guiGetSize(parent, false)
+
+	local absoluteWidth = parentWidth * w
+	local absoluteHeight = parentHeight * h
+
+	local dropDown = guiCreateStaticImage(absoluteWidth - 20, 0, 20, 20, "client\\images\\dropdown.png", false, list)
+	guiSetProperty(dropDown, 'AlwaysOnTop', 'True')
+	
+	addEventHandler('onClientGUIClick', dropDown, function()
+		guiListSetVisible(list, true)
+	end, false)
+
+	local bg = guiCreateButton(x, y, w, tabHeight, '', relative, parent)
+	guiSetProperty(bg, 'AlwaysOnTop', 'True')
+	guiSetVisible(bg, false)
+
+	local edit = guiCreateEdit(0, 0, absoluteWidth - 20, 20, '', false, bg)
+	guiSetProperty(edit, 'AlwaysOnTop', 'True')
+	
+	addEventHandler('onClientGUIChanged', edit, function()
+		guiListLoadItems(list)
+	end)
+
+	local searchIcon = guiCreateStaticImage(absoluteWidth - 40, 0, 20, 20, "client\\images\\search.png", false, edit)
+	guiSetEnabled(searchIcon, false)
+	guiSetProperty(searchIcon, 'AlwaysOnTop', 'True')
+
+	local close = guiCreateButton(absoluteWidth-20, 0, 20, 20, 'X', false, bg)
+	guiSetProperty(close, 'AlwaysOnTop', 'True')
+	guiSetAlpha(close, 1)
+	
+	addEventHandler('onClientGUIClick', close, function()
+		guiListSetVisible(list, false)
+	end, false)
+
+	local gridlist = guiCreateGridList(0, 0, 1, 1, true, bg)
+
+	addEventHandler('onClientGUIDoubleClick', gridlist, function()
+		local callback = lists[list].callback
+		if (type(callback) == 'function') then
+			local row = guiGridListGetSelectedItem(gridlist)
+			local data = guiGridListGetItemData(gridlist, row, 1)
+			local text = guiGridListGetItemText(gridlist, row, 1)
+			if (row > -1) then
+				callback(data, text)
+				guiListSetVisible(list, false)
+			end
+		end
+	end, false)
+
+
+	lists[list] = {
+		bg = bg,
+		edit = edit,
+		gridlist = gridlist,
+		items = {},
+		callback = function() end,
+	}
+
+	return list
 end
 
-local _guiCreateButton = guiCreateButton
-function guiCreateButton(x, y, w, h, text, relative, parent, right)
-    local button = _guiCreateButton(x, y, w, h, text, relative, parent)
-    if (button) then
-        if (right) then
-            right = "command." .. right
-            if (not hasPermissionTo(right)) then
-                guiSetEnabled(button, false)
-                _guiprotected[right] = button
-            end
-        end
-        guiSetFont(button, "default-bold-small")
-        return button
-    end
-    return false
+function guiListSetVisible(list, state)
+	if lists[list] then
+		guiSetVisible(lists[list].bg, state)
+		if state then
+			guiFocus(lists[list].edit)
+		end
+		return true
+	end
+	return false
 end
 
-local _guiCreateCheckBox = guiCreateCheckBox
-function guiCreateCheckBox(x, y, w, h, text, checked, relative, parent, right)
-    local check = _guiCreateCheckBox(x, y, w, h, text, checked, relative, parent)
-    if (check) then
-        if (right) then
-            right = "command." .. right
-            if (not hasPermissionTo(right)) then
-                guiSetEnabled(check, false)
-                _guiprotected[right] = check
-            end
-        end
-        return check
-    end
-    return false
+function guiListSetItems(list, items)
+	if lists[list] then
+		lists[list].items = items
+		guiListLoadItems(list)
+		return true
+	end
+	return false
 end
 
-local guiColorPickers = {}
-function guiCreateColorPicker(x, y, w, h, r, g, b, relative, parent)
-    local mask = guiCreateLabel(x, y, w, h, "", relative, parent)
-    guiLabelSetHorizontalAlign(mask, "left", true)
-    guiColorPickers[mask] = {r = r or 255, g = g or 0, b = b or 0}
-    addEventHandler(
-        "onClientGUIClick",
-        mask,
-        function(key, state)
-            local info = guiColorPickers[source]
-            if (key == "left" and state == "up" and info) then
-                local x2, y2 = guiGetAbsolutePosition(mask)
-                local sx, sy = guiGetSize(mask, false)
-                info.picking = true
-                info.r, info.g, info.b = aColor.Open(x2 + sx, y2 - 5, info.r, info.g, info.b)
-                info.picking = nil
-            end
-        end
-    )
-    addEventHandler(
-        "onClientElementDestroy",
-        mask,
-        function()
-            guiColorPickers[source] = nil
-        end
-    )
+function guiListSetCallBack(list, callback)
+	if lists[list] then
+		lists[list].callback = callback
+		return true
+	end
+	return false
 end
 
-addEventHandler(
-    "onClientRender",
-    root,
-    function()
-        if (isConsoleActive()) then
-            return
-        end
-        for mask, info in pairs(guiColorPickers) do
-            if (guiGetVisible(mask)) then
-                if (info.picking) then
-                    info.r, info.g, info.b = aColor.Color.r, aColor.Color.g, aColor.Color.b
-                end
-                local x, y = guiGetAbsolutePosition(mask)
-                local sx, sy = guiGetSize(mask, false)
-                dxDrawLine(x, y + sy / 2, x + sx, y + sy / 2, tocolor(info.r, info.g, info.b, 255), sy, true)
-            end
-        end
-    end
-)
-
-local guiBlendTable = {}
-function guiBlendElement(element, alpha, hide)
-    local increment = (alpha - guiGetAlpha(element)) * 10
-    guiBlendTable[element] = {inc = increment, hide = hide, target = alpha}
+function guiListSetColumns(list, columns)
+	if lists[list] then
+		for _, v in ipairs(columns) do
+			guiGridListAddColumn(lists[list].gridlist, v.text, v.width)
+		end
+		return true
+	end
+	return false
 end
 
-addEventHandler(
-    "onClientRender",
-    root,
-    function()
-        for element, v in pairs(guiBlendTable) do
-            local a = guiGetAlpha(element) + v.inc / 40
-            if (v.inc < 0 and a <= v.target) then
-                a = v.target
-                if (v.hide) then
-                    guiSetVisible(element, false)
-                end
-                guiBlendTable[element] = nil
-            elseif (v.inc > 0 and a >= v.target) then
-                a = v.target
-                guiBlendTable[element] = nil
-            end
-            guiSetAlpha(element, a)
-        end
-    end
-)
-
-function guiCreateContextMenu(element)
-    local menu = guiCreateStaticImage(0, 0, 100, 0, "client/images/black.png", false)
-    guiSetVisible(menu, false)
-    if (element) then
-        guiSetContextMenu(element, menu)
-    end
-    return menu
+function guiListLoadItems(list)
+	local listData = lists[list]
+	if listData then
+		local filter = guiGetText(listData.edit)
+		guiGridListClear(listData.gridlist)
+		for k, v in ipairs(listData.items) do
+			if (v.text:lower():find(filter:lower())) then
+				local row = guiGridListAddRow(listData.gridlist)
+				guiGridListSetItemText(listData.gridlist, row, 1, tostring ( v.text ), false, false )
+				guiGridListSetItemData(listData.gridlist, row, 1, tostring ( v.data ) )
+			end
+		end
+		return true
+	end
+	return false
 end
 
-function guiSetContextMenu(element, menu)
-    addEventHandler(
-        "onClientGUIClick",
-        element,
-        function(button)
-            contextSource = source
-            if (getElementType(source) == "gui-gridlist" and guiGridListGetSelectedItem(source) == -1) then
-                return
-            end
-            if (button == "right") then
-                local sx, sy = guiGetScreenSize()
-                local x, y = getCursorPosition()
-                x, y = sx * x, sy * y
-                guiSetPosition(menu, x, y, false)
-                guiSetVisible(menu, true)
-                guiBringToFront(menu)
-
-                setTimer(
-                    function()
-                        addEventHandler(
-                            "onClientClick",
-                            root,
-                            function(button2, state, x2, y2)
-                                local sx2, sy2 = guiGetSize(menu, false)
-                                local px, py = guiGetPosition(menu, false)
-                                if (x2 < px or x2 > px + sx2) or (y2 < py or y2 > py + sy2) then
-                                    guiSetVisible(menu, false)
-                                    removeEventHandler("onClientClick", root, debug.getinfo(1, "f").func)
-                                end
-                            end
-                        )
-                    end,
-                    50,
-                    1
-                )
-            end
-        end,
-        false
-    )
-    addEventHandler(
-        "onClientGUIClick",
-        menu,
-        function(button)
-            guiSetVisible(menu, false)
-        end
-    )
-end
-
-function guiContextMenuAddItem(element, text)
-    local height = 16
-    local sx, sy = guiGetSize(element, false)
-    local n = #getElementChildren(element)
-    local bg = guiCreateStaticImage(1, n * height + 1, 0, height, "client/images/black.png", false, element)
-    local item = guiCreateLabel(0, 0, 0, height, "  " .. text .. "  ", false, bg)
-    local extent = guiLabelGetTextExtent(item)
-    local width = guiGetSize(element, false) - 2
-    if (extent > width) then
-        width = extent
-    end
-    guiSetSize(element, width + 2, (n + 1) * height + 2, false)
-    guiSetSize(bg, width, height, false)
-    guiSetSize(item, width, height, false)
-
-    addEventHandler(
-        "onClientMouseEnter",
-        item,
-        function()
-            guiStaticImageLoadImage(getElementParent(source), "client/images/blue.png")
-        end,
-        false
-    )
-    addEventHandler(
-        "onClientMouseLeave",
-        item,
-        function()
-            guiStaticImageLoadImage(getElementParent(source), "client/images/black.png")
-        end,
-        false
-    )
-    return item
-end
-
-function guiCreateToolTip(element)
-end
-
-function guiGetAbsolutePosition(element)
-    local x, y = guiGetPosition(element, false)
-    local parent = getElementParent(element)
-    while (parent ~= getResourceGUIElement()) do
-        local px, py = guiGetPosition(parent, false)
-        x = x + px
-        y = y + py
-        parent = getElementParent(parent)
-    end
-    return x, y
-end
-
-function guiHandleInput(element)
-    addEventHandler(
-        "onClientGUIFocus",
-        element,
-        function()
-            guiSetInputEnabled(true)
-        end,
-        false
-    )
-    addEventHandler(
-        "onClientGUIBlur",
-        element,
-        function()
-            guiSetInputEnabled(false)
-        end,
-        false
-    )
-end
+addEventHandler('onClientGUIClick', guiRoot, function(button)
+	if (button == 'left') then
+		local parent = getElementParent(source)
+		if parent then
+			for list in pairs(lists) do
+				if guiGetVisible(list) and (parent ~= list) and (getElementParent(parent) ~= getElementParent(list)) then
+					guiListSetVisible(list, false)
+				end
+			end
+		end
+	end
+end)

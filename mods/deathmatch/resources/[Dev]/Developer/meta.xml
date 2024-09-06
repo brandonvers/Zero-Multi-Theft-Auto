@@ -1,7 +1,9 @@
 <meta>
-	<info author="|×|Brendon|×|" version="1.0" name="Developer" description=""
+	<info author="|×|Brendon|×|" version="1.0" name="Developer" description="Zero Multi Theft Auto Developer script"
 		type="script" gamemodes="Zero"
 	/>
+	<include resource="id-system" />
 	<script src="c_Developer.lua" type="client" cache="false" />
+	<script src="g_Developer.lua" type="shared" cache="false" />
 	<script src="s_Developer.lua" type="server" />
 </meta>

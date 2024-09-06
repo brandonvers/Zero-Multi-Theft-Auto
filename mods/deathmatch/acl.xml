@@ -25,6 +25,7 @@
         <object name="resource.admin"></object>
         <object name="resource.webadmin"></object>
         <object name="resource.acpanel"></object>
+        <object name="resource.Connection"></object>
         <object name="resource.core-system"></object>
     </group>
     <group name="Console">
@@ -201,6 +202,11 @@
         <right name="command.setworldproperty" access="false"></right>
         <right name="command.createdeveloper" access="false"></right>
         <right name="command.removedeveloper" access="false"></right>
+        <right name="command.aclmanager" access="false"></right>
+        <right name="command.aclcreate" access="false"></right>
+        <right name="command.acldestroy" access="false"></right>
+        <right name="command.acladd" access="false"></right>
+        <right name="command.aclremove" access="false"></right>
     </acl>
     <acl name="Moderator">
         <right name="general.ModifyOtherObjects" access="false"></right>
@@ -300,6 +306,11 @@
         <right name="command.setidlekicker" access="false"></right>
         <right name="general.tab_acl" access="false"></right>
         <right name="command.setworldproperty" access="false"></right>
+        <right name="command.aclmanager" access="false"></right>
+        <right name="command.aclcreate" access="false"></right>
+        <right name="command.acldestroy" access="false"></right>
+        <right name="command.acladd" access="false"></right>
+        <right name="command.aclremove" access="false"></right>
     </acl>
     <acl name="SuperModerator">
         <right name="general.ModifyOtherObjects" access="false"></right>
@@ -390,6 +401,11 @@
         <right name="command.setidlekicker" access="false"></right>
         <right name="general.tab_acl" access="false"></right>
         <right name="command.setworldproperty" access="true"></right>
+        <right name="command.aclmanager" access="false"></right>
+        <right name="command.aclcreate" access="false"></right>
+        <right name="command.acldestroy" access="false"></right>
+        <right name="command.acladd" access="false"></right>
+        <right name="command.aclremove" access="false"></right>
     </acl>
     <acl name="Admin">
         <right name="general.ModifyOtherObjects" access="true"></right>
@@ -521,6 +537,11 @@
         <right name="command.setworldproperty" access="true"></right>
         <right name="command.createdeveloper" access="true"></right>
         <right name="command.removedeveloper" access="true"></right>
+        <right name="command.aclmanager" access="true"></right>
+        <right name="command.aclcreate" access="true"></right>
+        <right name="command.acldestroy" access="true"></right>
+        <right name="command.acladd" access="true"></right>
+        <right name="command.aclremove" access="true"></right>
     </acl>
     <acl name="RPC">
         <right name="function.callRemote" access="true"></right>
@@ -605,6 +626,11 @@
         <right name="command.setpingkicker" access="false"></right>
         <right name="command.setglitch" access="false"></right>
         <right name="command.setworldproperty" access="false"></right>
+        <right name="command.aclmanager" access="false"></right>
+        <right name="command.aclcreate" access="false"></right>
+        <right name="command.acldestroy" access="false"></right>
+        <right name="command.acladd" access="false"></right>
+        <right name="command.aclremove" access="false"></right>
     </acl>
     <acl name="DevACL">
         <right name="resource.performancebrowser.http" access="true"></right>
@@ -689,5 +715,10 @@
         <right name="command.setpingkicker" access="false"></right>
         <right name="command.setglitch" access="false"></right>
         <right name="command.setworldproperty" access="false"></right>
+        <right name="command.aclmanager" access="false"></right>
+        <right name="command.aclcreate" access="false"></right>
+        <right name="command.acldestroy" access="false"></right>
+        <right name="command.acladd" access="false"></right>
+        <right name="command.aclremove" access="false"></right>
     </acl>
 </acl>

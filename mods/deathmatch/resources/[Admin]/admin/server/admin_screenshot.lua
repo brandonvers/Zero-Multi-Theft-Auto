@@ -4,187 +4,118 @@
 *
 *	admin_screenshot.lua
 *
-*	Original File by lil_Toady
+*	Original File by MCvarial
 *
 **************************************]]
-local aScreenShots = {
-    pending = {},
-    quality = {
-        [SCREENSHOT_QLOW] = {
-            w = 320,
-            h = 240,
-            q = 30,
-            b = 2500
-        },
-        [SCREENSHOT_QMEDIUM] = {
-            w = 640,
-            h = 480,
-            q = 50,
-            b = 2000
-        },
-        [SCREENSHOT_QHIGH] = {
-            w = 1024,
-            h = 768,
-            q = 70,
-            b = 1500
-        }
-    }
+
+local con = dbConnect("sqlite", ":/registry.db")
+dbExec(con, "CREATE TABLE IF NOT EXISTS `admin_screenshots` (`id` INTEGER, `player` TEXT, `serial` TEXT, `admin` TEXT, `realtime` TEXT)")
+
+local screenshots = {}
+local currentid = 0
+local rights = {
+	["new"] = "takescreenshot",
+	["delete"] = "deletescreenshot",
+	["view"] = "viewscreenshot",
+	["list"] = "listscreenshots"
 }
 
-addEvent(EVENT_SCREEN_SHOT, true)
-addEventHandler(
-    EVENT_SCREEN_SHOT,
-    root,
-    function(action, id, ...)
-    end
+addEventHandler("onResourceStart", resourceRoot,
+	function()
+		dbQuery(resourceStartedCallback, {}, con, "SELECT `id` FROM `admin_screenshots`")
+	end
 )
 
-function getPlayerScreen(player, admin, q)
-    if (not q) then
-        q = SCREENSHOT_QLOW
-    end
-    local quality = aScreenShots.quality[q]
-    if (not quality) then
-        quality = aScreenShots.quality[SCREENSHOT_QLOW]
-    end
-
-    local tag = "a" .. math.random(1, 1000)
-    while (aScreenShots.pending[tag] ~= nil) do
-        tag = "a" .. math.random(1, 1000)
-    end
-
-    takePlayerScreenShot(player, quality.w, quality.h, tag, quality.q, quality.b)
-
-    local timeout = getTickCount() + 1000 * 60 * 15
-    local account = "Unknown"
-    if (admin and isElement(admin)) then
-        local acc = getPlayerAccount(admin)
-        if (isGuestAccount(acc)) then
-            account = string.gsub(getPlayerName(admin), "#%x%x%x%x%x%x", "")
-        else
-            account = getAccountName(acc)
-        end
-    end
-    aScreenShots.pending[tag] = {
-        player = player,
-        playername = getPlayerName(player),
-        admin = admin,
-        account = account,
-        timeout = timeout
-    }
+function resourceStartedCallback(qh)
+	local result = dbPoll(qh, 0)
+	for i, screenshot in ipairs(result) do
+		if screenshot.id > currentid then
+			currentid = screenshot.id
+		end
+	end
 end
 
-local function collectTimedOutScreenShots()
-    for tag, data in pairs(aScreenShots.pending) do
-        local timeout = data.timeout
-        if ((not timeout) or (getTickCount() > timeout)) then
-            aScreenShots.pending[tag] = nil
-        end
-    end
-end
-
-local function removeTempScreenShots()
-    local query = db.query("SELECT file FROM screenshots WHERE temp = 1")
-    if (query) then
-        for i, row in ipairs(query) do
-            if (fileExists("screenshots\\" .. row.file)) then
-                fileDelete("screenshots\\" .. row.file)
-            end
-        end
-    end
-    db.exec("DELETE FROM screenshots WHERE temp = 1")
-end
-
-local function getFileFriendlyName(string)
-    if (not string) then
-        return ""
-    end
-    local result = ""
-    for s in string.gmatch(string, "%a+") do
-        result = result .. s
-    end
-    return result
-end
-
-addEventHandler(
-    "onResourceStart",
-    resourceRoot,
-    function()
-        db.exec(
-            "CREATE TABLE IF NOT EXISTS screenshots ( file TEXT, player TEXT, admin TEXT, description TEXT, time INTEGER, temp BOOL )"
-        )
-        removeTempScreenShots()
-    end
+addEvent("aScreenShot",true)
+addEventHandler("aScreenShot",root,
+	function (action,player,arg1)
+		local admin = client
+		if not isElement(admin) then return end
+		if not action then return end
+		local right = rights[action]
+		if not right or not hasObjectPermissionTo(admin,"command."..right) then return end
+		if action == "new" then
+			if not isElement(player) then return end
+			if screenshots[player] then
+				table.insert(screenshots[player].admins,admin)
+			else
+				local t = getRealTime()
+				screenshots[player] = {player=player,admin=getPlayerName(admin),admins={admin},realtime=t.monthday.."/"..(t.month+1).."/"..(t.year+1900).." "..t.hour..":"..t.minute..":"..t.second}
+				takePlayerScreenShot(player,800,600,getPlayerName(player))
+				triggerClientEvent(admin,"aClientScreenShot",resourceRoot,"new",player)
+			end
+		elseif action == "list" then
+			dbQuery(clientScreenShotCallback, {admin}, con, "SELECT `id`,`player`,`admin`,`realtime` FROM `admin_screenshots`")
+		elseif action == "delete" then
+			if fileExists("screenshots/"..player..".jpg") then
+				fileDelete("screenshots/"..player..".jpg")
+			end
+			dbExec(con, "DELETE FROM `admin_screenshots` WHERE `id`=?", player)
+		elseif action == "view" then
+			if fileExists("screenshots/"..player..".jpg") then
+				local file = fileOpen("screenshots/"..player..".jpg")
+				local imagedata = fileRead(file,fileGetSize(file))
+				fileClose(file)
+				triggerClientEvent(admin,"aClientScreenShot",resourceRoot,"new",arg1)
+				triggerLatentClientEvent(admin,"aClientScreenShot",resourceRoot,"view",arg1,imagedata)
+			end
+		end
+	end
 )
 
-addEventHandler(
-    "onPlayerScreenShot",
-    root,
-    function(resource, status, jpeg, time, tag)
-        collectTimedOutScreenShots()
-        if (resource ~= getThisResource()) then
-            return
-        end
+function clientScreenShotCallback(qh, admin)
+	local result = dbPoll(qh, 0)
+	if (not isElement(admin)) then return end
+	triggerClientEvent(admin, "aClientScreenShot", resourceRoot, "list", nil, result)
+end
 
-        local data = aScreenShots.pending[tag]
-        if (not data) then
-            return
-        end
+addEventHandler("onPlayerScreenShot",root,
+	function (resource,status,imagedata,timestamp,tag)
+		if resource == getThisResource() then
+			local screenshot = screenshots[source]
+			if not screenshot then return end
+			if status == "ok" then
+				currentid = currentid + 1
+				dbExec(con, "INSERT INTO `admin_screenshots`(`id`,`player`,`serial`,`admin`,`realtime`) VALUES(?,?,?,?,?)",currentid,getPlayerName(source),getPlayerSerial(source),screenshot.admin,screenshot.realtime)
+				if fileExists("screenshots/"..currentid..".jpg") then
+					fileDelete("screenshots/"..currentid..".jpg")
+				end
+				local file = fileCreate("screenshots/"..currentid..".jpg")
+				fileWrite(file,imagedata)
+				fileClose(file)
+				for i,admin in ipairs (screenshot.admins) do
+					if isElement(admin) then
+						triggerLatentClientEvent(admin,"aClientScreenShot",resourceRoot,"view",source,imagedata,screenshot.admin,screenshot.realtime,currentid)
+					end
+				end
+			else
+				for i,admin in ipairs (screenshot.admins) do
+					if isElement(admin) then
+						triggerClientEvent(admin,"aClientScreenShot",resourceRoot,status,source)
+					end
+				end
+			end
+			screenshots[source] = nil
+		end
+	end
+)
 
-        local id = 0
-        if (status == "ok") then
-            -- save a local copy
-            local time2 = getRealTime()
-            local file_time =
-                string.format(
-                "%.2d-%.2d-%.2d_%.2d-%.2d-%.2d",
-                time2.year + 1900,
-                time2.month + 1,
-                time2.monthday,
-                time2.hour,
-                time2.minute,
-                time2.second
-            )
-
-            local file_counter = 1
-            local file_player = getFileFriendlyName(data.playername)
-            if (file_player == "") then
-                file_player = "screen"
-            end
-            local file_name = file_player .. "_" .. file_time .. ".jpg"
-            while (fileExists("screenshots\\" .. file_name)) do
-                file_name = file_player .. "_" .. file_time .. "_" .. file_counter .. ".jpg"
-                file_counter = file_counter + 1
-            end
-
-            local file = fileCreate("screenshots\\" .. file_name)
-            if (file) then
-                fileWrite(file, jpeg)
-                fileClose(file)
-
-                local query = "INSERT INTO screenshots (file,player,admin,description,time,temp) VALUES (?,?,?,?,?,?)"
-                db.exec(
-                    query,
-                    file_name,
-                    data.playername or "Unknown",
-                    data.account or "Unknown",
-                    "Toady's driving like a boss",
-                    time2.timestamp,
-                    0
-                )
-
-                id = db.last_insert_id()
-            end
-        else
-            jpeg = nil
-        end
-
-        -- making sure the bastard didn't leave yet
-        local admin = data.admin
-        if ((not admin) or (not isElement(admin)) or (getElementType(admin) ~= "player")) then
-            return
-        end
-
-        triggerClientEvent(admin, EVENT_SCREEN_SHOT, admin, status, file_name, id, jpeg)
-    end
+addEventHandler("onPlayerQuit",root,
+	function ()
+		if screenshots[source] then
+			for i,admin in ipairs (screenshots[source].admins) do
+				triggerClientEvent(admin,"aClientScreenShot",resourceRoot,"quit",source)
+			end
+			screenshots[source] = nil
+		end
+	end
 )
